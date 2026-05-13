@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import process from "node:process";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
+import { jwtSecret } from "./app/auth/middleware.js";
 import { allowedOrigins } from "./app/cors.js";
 import { createExpressApp } from "./app/index.js";
 import { setRealtimeServer } from "./app/polls/realtime.js";
@@ -10,6 +11,7 @@ import { connectDB } from "./db/config.js";
 
 async function main(){
     try{
+        jwtSecret();
         await connectDB();
         const server = createServer(createExpressApp());
         const io = new Server(server, {

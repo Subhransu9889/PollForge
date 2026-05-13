@@ -33,7 +33,7 @@ Create `backend/.env`:
 
 ```bash
 PORT=4000
-MONGODB_URI=mongodb://127.0.0.1:27017/pollforge
+MONGODB_URI=your_uri_here
 JWT_SECRET=replace-with-a-long-secret
 FRONTEND_URL=http://localhost:5173
 ```
@@ -43,6 +43,16 @@ Optionally create `frontend/.env`:
 ```bash
 VITE_API_URL=http://localhost:4000
 ```
+
+For deployment, set the same backend variables on your backend host:
+
+```bash
+MONGODB_URI=your-mongodb-connection-string
+JWT_SECRET=your-long-random-secret
+FRONTEND_URL=your-frontend-url
+```
+
+If either `MONGODB_URI` or `JWT_SECRET` is missing, authentication cannot work.
 
 Run the backend:
 
