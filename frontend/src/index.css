@@ -108,7 +108,8 @@
   }
 
   .auth-shell {
-    @apply grid place-items-center px-4 py-8;
+    @apply grid min-h-screen place-items-center px-3 py-4 sm:px-4 sm:py-8;
+    min-height: 100dvh;
   }
 
   .landing-shell {
@@ -342,8 +343,8 @@
   }
 
   .auth-layout {
-    @apply grid w-full max-w-6xl overflow-hidden rounded-lg border border-white/10 bg-white/[0.045] shadow-2xl lg:grid-cols-[1.1fr_0.9fr];
-    min-height: min(760px, calc(100vh - 64px));
+    @apply grid w-full max-w-md overflow-visible rounded-lg border border-white/10 bg-white/[0.045] shadow-2xl lg:max-w-6xl lg:overflow-hidden lg:grid-cols-[1.1fr_0.9fr];
+    min-height: auto;
     backdrop-filter: blur(18px);
   }
 
@@ -356,7 +357,7 @@
   }
 
   .auth-panel-wrap {
-    @apply flex items-center justify-center p-4 sm:p-8;
+    @apply flex w-full flex-col items-stretch justify-center p-3 sm:p-6 lg:items-center lg:p-8;
   }
 
   .auth-card {
@@ -562,6 +563,39 @@
 
   .typography-small {
     @apply text-sm text-muted;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-layout {
+    min-height: min(760px, calc(100vh - 64px));
+  }
+}
+
+@media (max-width: 639px) {
+  .auth-card {
+    @apply rounded-lg;
+  }
+
+  .auth-card [data-slot="card-content"] {
+    @apply p-5;
+  }
+
+  .auth-card form {
+    @apply space-y-3.5;
+  }
+
+  .auth-card .typography-h2 {
+    @apply text-[1.65rem] leading-tight;
+  }
+
+  .auth-card .typography-p {
+    @apply text-sm leading-6;
+  }
+
+  .auth-card [data-slot="button"],
+  .auth-card [data-slot="input"] {
+    @apply h-11;
   }
 }
 
