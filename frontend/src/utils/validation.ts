@@ -30,9 +30,17 @@ export const registerSchema = z.object({
 
 export const createPollSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(160),
-  description: z.string().max(500).optional().default(''),
+  description: z.string().max(500, 'Description must be 500 characters or less'),
   responseMode: z.enum(['anonymous', 'authenticated']),
-  expiresAt: z.string().datetime(),
+  expiresAt: z
+    .string()
+    .min(1, 'Expiration is required')
+    .refine((value) => !Number.isNaN(new Date(value).getTime()), {
+      message: 'Please choose a valid expiration date and time',
+    })
+    .refine((value) => new Date(value).getTime() > Date.now(), {
+      message: 'Expiration must be in the future',
+    }),
   questions: z
     .array(questionSchema)
     .min(1, 'At least one question is required')

@@ -1,14 +1,15 @@
+import { useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { API_URL } from '@/constants'
 
 export function useApi() {
   const { token } = useAuth()
 
-  const authHeaders: Record<string, string> = token
-    ? { Authorization: `Bearer ${token}` }
-    : {}
+  const api = useCallback(async (path: string, options: RequestInit = {}) => {
+    const authHeaders: Record<string, string> = token
+      ? { Authorization: `Bearer ${token}` }
+      : {}
 
-  async function api(path: string, options: RequestInit = {}) {
     const response = await fetch(`${API_URL}${path}`, {
       ...options,
       headers: {
@@ -25,7 +26,7 @@ export function useApi() {
     }
 
     return data
-  }
+  }, [token])
 
   return { api }
 }

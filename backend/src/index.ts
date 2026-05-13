@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import process = require("node:process");
+import mongoose from "mongoose";
 import { Server } from "socket.io";
+import { allowedOrigins } from "./app/cors.js";
 import { createExpressApp } from "./app/index.js";
 import { setRealtimeServer } from "./app/polls/realtime.js";
 import { connectDB } from "./db/config.js";
@@ -10,12 +12,30 @@ async function main(){
         await connectDB();
         const server = createServer(createExpressApp());
         const io = new Server(server, {
-            cors: { origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173" },
+            cors: { origin: allowedOrigins(), credentials: true },
+            connectionStateRecovery: {
+                maxDisconnectionDuration: 2 * 60 * 1000,
+                skipMiddlewares: true,
+            },
+            maxHttpBufferSize: 1e6,
+            pingInterval: 25_000,
+            pingTimeout: 20_000,
         });
 
         io.on("connection", (socket) => {
             socket.on("poll:join", (pollId: string) => {
+                if (!mongoose.isValidObjectId(pollId)) {
+                    socket.emit("poll:error", { message: "Invalid poll room" });
+                    return;
+                }
+
                 socket.join(`poll:${pollId}`);
+            });
+
+            socket.on("poll:leave", (pollId: string) => {
+                if (mongoose.isValidObjectId(pollId)) {
+                    socket.leave(`poll:${pollId}`);
+                }
             });
         });
 

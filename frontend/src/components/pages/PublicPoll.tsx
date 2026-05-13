@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Poll, Analytics } from '@/types'
 import type { LoginFormData, RegisterFormData } from '@/utils/validation'
 import { useApi } from '@/hooks/useApi'
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { TypographyH1, TypographyP } from '@/components/ui/typography'
 import { formatTimeRemaining } from '@/utils/formatting'
 
@@ -32,24 +32,39 @@ export function PublicPoll({ pollId }: PublicPollProps) {
 
   // Load poll
   useEffect(() => {
-    setLoading(true)
+    let isCurrent = true
     api(`/api/polls/${pollId}`)
       .then((data) => {
+        if (!isCurrent) return
         setPoll(data.poll)
         if (data.analytics) {
           setAnalytics(data.analytics)
         }
       })
       .catch((err) => {
-        toast.error(err.message)
+        if (isCurrent) {
+          toast.error(err.message)
+        }
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (isCurrent) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      isCurrent = false
+    }
   }, [pollId, api])
+
+  const handleAnalyticsUpdate = useCallback((newAnalytics: Analytics) => {
+    setAnalytics(newAnalytics)
+  }, [])
 
   // Socket updates
   usePollSocket(
     pollId,
-    (newAnalytics) => setAnalytics(newAnalytics),
+    handleAnalyticsUpdate,
   )
 
   const handleSubmitResponse = async (answers: Record<string, string>) => {
@@ -67,8 +82,6 @@ export function PublicPoll({ pollId }: PublicPollProps) {
         }),
       })
       toast.success('Thanks for your feedback!')
-    } catch (err) {
-      throw err
     } finally {
       setSubmitting(false)
     }
@@ -85,8 +98,6 @@ export function PublicPoll({ pollId }: PublicPollProps) {
       setToken(response.token)
       setUser(response.user)
       toast.success(`Signed in successfully!`)
-    } catch (err) {
-      throw err
     } finally {
       setAuthLoading(false)
     }
@@ -122,90 +133,87 @@ export function PublicPoll({ pollId }: PublicPollProps) {
   const statusText = poll.isPublished ? 'Results Published' : poll.isExpired ? 'Expired' : 'Accepting Responses'
 
   return (
-    <>
-      <div className="app-shell">
-        <div className="container-max max-w-3xl">
-          <header className="py-8 text-center border-b border-border mb-8">
-            <div className="flex justify-center mb-3">
-              <Badge className={`${statusColor}`}>{statusText}</Badge>
-            </div>
-            <TypographyH1>{poll.title}</TypographyH1>
-            <TypographyP className="mt-3">{poll.description}</TypographyP>
-            <TypographyP className="text-xs mt-2">{formatTimeRemaining(poll.expiresAt)}</TypographyP>
-          </header>
-
-          <div className="grid gap-6">
-            {/* Auth Block */}
-            {poll.responseMode === 'authenticated' && !token && !poll.isPublished && !poll.isExpired && (
-              <Card className="border-primary/50 bg-primary/5">
-                <CardHeader>
-                  <CardTitle>Sign In Required</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TypographyP className="mb-6">
-                    This poll requires authentication. Please sign in or create an account to participate.
-                  </TypographyP>
-
-                  <div className="space-y-4">
-                    {authMode === 'login' ? (
-                      <LoginForm
-                        onSubmit={handleAuth}
-                        isLoading={authLoading}
-                        onSwitchToRegister={() => setAuthMode('register')}
-                      />
-                    ) : (
-                      <RegisterForm
-                        onSubmit={handleAuth}
-                        isLoading={authLoading}
-                        onSwitchToLogin={() => setAuthMode('login')}
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Response Form */}
-            {poll.isPublished ? (
-              <>
-                <div className="text-center py-6">
-                  <TypographyP>Poll results are now published.</TypographyP>
-                </div>
-                {analytics && <AnalyticsPanel analytics={analytics} />}
-              </>
-            ) : poll.isExpired ? (
-              <Alert>
-                <AlertDescription>
-                  This poll has expired. Responses are closed. The creator will publish final results here when ready.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <>
-                {(poll.responseMode === 'anonymous' || token) && (
-                  <ResponseForm
-                    poll={poll}
-                    onSubmit={handleSubmitResponse}
-                    isLoading={submitting}
-                  />
-                )}
-              </>
-            )}
-
-            {/* Live Analytics */}
-            {analytics && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Live Results</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <AnalyticsPanel analytics={analytics} />
-                </CardContent>
-              </Card>
-            )}
+    <div className="app-shell">
+      <div className="container-max max-w-3xl">
+        <header className="py-8 text-center border-b border-border mb-8">
+          <div className="flex justify-center mb-3">
+            <Badge className={`${statusColor}`}>{statusText}</Badge>
           </div>
+          <TypographyH1>{poll.title}</TypographyH1>
+          <TypographyP className="mt-3">{poll.description}</TypographyP>
+          <TypographyP className="text-xs mt-2">{formatTimeRemaining(poll.expiresAt)}</TypographyP>
+        </header>
+
+        <div className="grid gap-6">
+          {/* Auth Block */}
+          {poll.responseMode === 'authenticated' && !token && !poll.isPublished && !poll.isExpired && (
+            <Card className="border-primary/50 bg-primary/5">
+              <CardHeader>
+                <CardTitle>Sign In Required</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TypographyP className="mb-6">
+                  This poll requires authentication. Please sign in or create an account to participate.
+                </TypographyP>
+
+                <div className="space-y-4">
+                  {authMode === 'login' ? (
+                    <LoginForm
+                      onSubmit={handleAuth}
+                      isLoading={authLoading}
+                      onSwitchToRegister={() => setAuthMode('register')}
+                    />
+                  ) : (
+                    <RegisterForm
+                      onSubmit={handleAuth}
+                      isLoading={authLoading}
+                      onSwitchToLogin={() => setAuthMode('login')}
+                    />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Response Form */}
+          {poll.isPublished ? (
+            <>
+              <div className="text-center py-6">
+                <TypographyP>Poll results are now published.</TypographyP>
+              </div>
+              {analytics && <AnalyticsPanel analytics={analytics} />}
+            </>
+          ) : poll.isExpired ? (
+            <Alert>
+              <AlertDescription>
+                This poll has expired. Responses are closed. The creator will publish final results here when ready.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              {(poll.responseMode === 'anonymous' || token) && (
+                <ResponseForm
+                  poll={poll}
+                  onSubmit={handleSubmitResponse}
+                  isLoading={submitting}
+                />
+              )}
+            </>
+          )}
+
+          {/* Live Analytics */}
+          {analytics && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Live Results</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnalyticsPanel analytics={analytics} />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
-      <Toaster position="bottom-right" />
-    </>
+    </div>
   )
 }

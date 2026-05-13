@@ -22,7 +22,7 @@ export function QuestionEditor({
   return (
     <Card className="question-card">
       <CardContent className="pt-6 space-y-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="question-editor-head">
           <div className="question-index">
             <GripVertical className="size-4" />
             {index + 1}
@@ -72,7 +72,7 @@ export function QuestionEditor({
         <div className="space-y-2">
           <div className="text-sm font-medium text-muted">Options</div>
           {question.options.map((option, optionIndex) => (
-            <div key={optionIndex} className="flex gap-2">
+            <div key={optionIndex} className="option-row">
               <Input
                 placeholder={`Option ${optionIndex + 1}`}
                 value={option.label}

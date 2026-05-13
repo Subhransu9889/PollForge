@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form'
+import type { ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createPollSchema } from '@/utils/validation'
 import type { CreatePollFormData } from '@/utils/validation'
@@ -36,32 +37,41 @@ const blankQuestion = (): Question => ({
   options: [{ label: '' }, { label: '' }],
 })
 
+const toLocalDateTimeInputValue = (date: Date) => {
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
+  return offsetDate.toISOString().slice(0, 16)
+}
+
+const defaultFormValues = (): CreatePollFormData => ({
+  title: '',
+  description: '',
+  responseMode: 'anonymous',
+  expiresAt: toLocalDateTimeInputValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+  questions: [blankQuestion()],
+})
+
+type PollField<TName extends keyof CreatePollFormData> = ControllerRenderProps<CreatePollFormData, TName>
+
 export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
   const form = useForm<CreatePollFormData>({
     resolver: zodResolver(createPollSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      responseMode: 'anonymous' as const,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-      questions: [blankQuestion()],
-    },
-  } as any)
+    defaultValues: defaultFormValues(),
+  })
 
   const questions = form.watch('questions')
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CreatePollFormData) => {
     try {
-      await onSubmit(data as CreatePollFormData)
-      form.reset()
-    } catch (error) {
+      await onSubmit(data)
+      form.reset(defaultFormValues())
+    } catch {
       // Error is handled by parent
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="poll-builder-form">
         <Card>
           <CardHeader className="dashboard-card-head">
             <div>
@@ -74,7 +84,7 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
             <FormField
               control={form.control}
               name="title"
-              render={({ field }: any) => (
+              render={({ field }: { field: PollField<'title'> }) => (
                 <FormItem>
                   <FormLabel>Poll Title</FormLabel>
                   <FormControl>
@@ -92,7 +102,7 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
             <FormField
               control={form.control}
               name="description"
-              render={({ field }: any) => (
+              render={({ field }: { field: PollField<'description'> }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
@@ -107,11 +117,11 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
               )}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="builder-field-grid">
               <FormField
                 control={form.control}
                 name="responseMode"
-                render={({ field }: any) => (
+                render={({ field }: { field: PollField<'responseMode'> }) => (
                   <FormItem>
                     <FormLabel>Response Mode</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
@@ -133,7 +143,7 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
               <FormField
                 control={form.control}
                 name="expiresAt"
-                render={({ field }: any) => (
+                render={({ field }: { field: PollField<'expiresAt'> }) => (
                   <FormItem>
                     <FormLabel className="inline-flex items-center gap-1.5">
                       <CalendarClock className="size-3.5" />
@@ -142,6 +152,7 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
                     <FormControl>
                       <Input
                         type="datetime-local"
+                        min={toLocalDateTimeInputValue(new Date())}
                         {...field}
                         disabled={isLoading}
                       />
@@ -155,7 +166,7 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
         </Card>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="builder-section-head">
             <h3 className="font-semibold">Questions</h3>
             <span className="rounded-full border border-border px-2.5 py-1 text-xs text-muted">
               {questions.length} {questions.length === 1 ? 'question' : 'questions'}
@@ -179,7 +190,7 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
           ))}
         </div>
 
-        <div className="flex gap-2">
+        <div className="builder-actions">
           <Button
             type="button"
             variant="outline"
