@@ -426,6 +426,14 @@
     @apply grid min-w-0 grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(260px,330px)_minmax(0,1fr)] lg:gap-5;
   }
 
+  .dashboard-workspace {
+    @apply grid-cols-1 gap-5 lg:grid-cols-1;
+  }
+
+  .workspace-top-row {
+    @apply grid min-w-0 grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(260px,330px)_minmax(0,1fr)] lg:gap-5;
+  }
+
   .workspace.auth-only {
     @apply min-h-[calc(100vh-120px)] grid-cols-1 place-content-center;
   }
@@ -486,6 +494,28 @@
     @apply flex flex-row items-start justify-between gap-4 border-b border-white/10 pb-4;
   }
 
+  .live-view-card {
+    @apply relative overflow-hidden border-primary/20 bg-white/[0.045] shadow-2xl;
+  }
+
+  .live-view-card::before {
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px;
+    content: "";
+    background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.7), rgba(244, 162, 97, 0.55), transparent);
+  }
+
+  .live-view-card [data-slot="card-content"] {
+    @apply p-4 sm:p-6;
+  }
+
+  .live-view-head {
+    @apply items-center;
+  }
+
+  .live-view-status {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-primary;
+  }
+
   .sticky-card {
     @apply xl:sticky xl:top-4;
   }
@@ -494,8 +524,28 @@
     @apply grid min-w-0 gap-2 rounded-lg border border-primary/25 bg-primary/10 p-3;
   }
 
+  .live-share-panel {
+    @apply items-center gap-3 bg-[#071017]/75 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:p-4;
+  }
+
+  .live-share-row {
+    @apply flex min-w-0 items-center gap-2;
+  }
+
   .share-code {
     @apply min-w-0 flex-1 rounded-md border border-white/10 bg-background/80 p-2 text-xs text-white break-all;
+  }
+
+  .publish-bar {
+    @apply grid gap-3 rounded-lg border border-secondary/25 bg-secondary/10 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center;
+  }
+
+  .publish-bar strong {
+    @apply block text-base font-black text-white;
+  }
+
+  .publish-bar span {
+    @apply mt-1 block text-sm text-muted;
   }
 
   .poll-row {
@@ -608,7 +658,7 @@
   }
 
   .analytics-metric-grid {
-    @apply grid gap-3 sm:grid-cols-2 2xl:grid-cols-4;
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4;
   }
 
   .analytics-metric-card {

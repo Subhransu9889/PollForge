@@ -136,78 +136,80 @@ export function Dashboard() {
           </div>
         </section>
 
-        <div className="workspace">
-          <Sidebar
-            polls={polls}
-            selectedPollId={activePollId}
-            onSelectPoll={handleSelectPoll}
-            onCreateNew={() => {}}
-          />
+        <div className="workspace dashboard-workspace">
+          <div className="workspace-top-row">
+            <Sidebar
+              polls={polls}
+              selectedPollId={activePollId}
+              onSelectPoll={handleSelectPoll}
+              onCreateNew={() => {}}
+            />
 
-          <div className="main-grid">
             <PollBuilder onSubmit={handleCreatePoll} isLoading={pollCreating} />
-
-            <div className="space-y-4">
-              <Card className="sticky-card">
-                <CardHeader className="dashboard-card-head">
-                  <div>
-                    <p className="eyebrow">Live view</p>
-                    <CardTitle>Analytics & Results</CardTitle>
-                  </div>
-                  <Activity className="size-5 text-primary" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {activePollId && selectedAnalytics ? (
-                    <>
-                      <div className="share-panel">
-                        <TypographySmall className="text-primary">Share Link</TypographySmall>
-                        <div className="flex gap-2 items-center">
-                          <code className="share-code">
-                            {window.location.origin}/p/{activePollId}
-                          </code>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={copyShareLink}
-                          >
-                            {copiedId === activePollId ? (
-                              <Check className="w-4 h-4" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {!selectedAnalytics && (
-                        <TypographyP>No responses yet. Share the link to start collecting feedback.</TypographyP>
-                      )}
-
-                      {selectedAnalytics && (
-                        <>
-                          <AnalyticsPanel analytics={selectedAnalytics} />
-                          {!polls.find(p => p.id === activePollId)?.isPublished && (
-                            <Button onClick={handlePublishResults} className="w-full" size="lg">
-                              <Send className="size-4" />
-                              Publish Final Results
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </>
-                  ) : activePollId ? (
-                    <div className="space-y-3">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                      <Skeleton className="h-32 w-full" />
-                    </div>
-                  ) : (
-                    <TypographyP>Select or create a poll to see analytics.</TypographyP>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
           </div>
+
+          <Card className="live-view-card">
+            <CardHeader className="dashboard-card-head live-view-head">
+              <div>
+                <p className="eyebrow">Live view</p>
+                <CardTitle>Analytics & Results</CardTitle>
+              </div>
+              <div className="live-view-status">
+                <Activity className="size-4" />
+                Realtime
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {activePollId && selectedAnalytics ? (
+                <>
+                  <div className="share-panel live-share-panel">
+                    <div>
+                      <TypographySmall className="text-primary">Share Link</TypographySmall>
+                      <p className="text-xs text-muted">Send this poll out and watch the results update below.</p>
+                    </div>
+                    <div className="live-share-row">
+                      <code className="share-code">
+                        {window.location.origin}/p/{activePollId}
+                      </code>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={copyShareLink}
+                      >
+                        {copiedId === activePollId ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <AnalyticsPanel analytics={selectedAnalytics} />
+                  {!polls.find(p => p.id === activePollId)?.isPublished && (
+                    <div className="publish-bar">
+                      <div>
+                        <strong>Ready to close the loop?</strong>
+                        <span>Publish final results when your response window is complete.</span>
+                      </div>
+                      <Button onClick={handlePublishResults} size="lg">
+                        <Send className="size-4" />
+                        Publish Final Results
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : activePollId ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-32 w-full" />
+                </div>
+              ) : (
+                <TypographyP>Select or create a poll to see analytics.</TypographyP>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
