@@ -1,76 +1,155 @@
 import type { Analytics } from '@/types'
+import type { ComponentType } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TypographySmall } from '@/components/ui/typography'
-import { Progress } from '@/components/ui/progress'
 import { formatPercentage } from '@/utils/formatting'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { CircleCheck, MessageSquareText, UserRound } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import {
+  Activity,
+  CircleCheck,
+  MessageSquareText,
+  MousePointerClick,
+  TrendingUp,
+  UserRound,
+} from 'lucide-react'
 
 interface AnalyticsPanelProps {
   analytics: Analytics
 }
 
+type QuestionAnalytics = Analytics['questions'][number]
+type OptionAnalytics = QuestionAnalytics['options'][number]
+
+const chartColors = ['#2dd4bf', '#f4a261', '#b8f7c2', '#8ab4ff', '#f7b2d9', '#d8b4fe']
+
 export function AnalyticsPanel({ analytics }: AnalyticsPanelProps) {
+  const totalAnswered = analytics.questions.reduce((sum, question) => sum + question.answered, 0)
+  const totalSkipped = analytics.questions.reduce((sum, question) => sum + question.skipped, 0)
+  const averageAnswered = analytics.questions.length ? Math.round(totalAnswered / analytics.questions.length) : 0
+  const strongestOption = analytics.questions
+    .flatMap((question) => question.options.map((option) => ({ ...option, question: question.text })))
+    .sort((a, b) => b.percent - a.percent)[0]
+
   return (
-    <div className="space-y-4">
-      {/* Summary Stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="metric-card">
-          <CardContent className="pt-6 text-center">
-            <MessageSquareText className="mx-auto mb-2 size-5 text-primary" />
-            <div className="text-3xl font-bold text-primary">{analytics.totalResponses}</div>
-            <TypographySmall className="text-center">Total Responses</TypographySmall>
-          </CardContent>
-        </Card>
-        <Card className="metric-card">
-          <CardContent className="pt-6 text-center">
-            <CircleCheck className="mx-auto mb-2 size-5 text-accent" />
-            <div className="text-3xl font-bold text-accent">
-              {formatPercentage(analytics.participation.completionRate)}
-            </div>
-            <TypographySmall className="text-center">Completion Rate</TypographySmall>
-          </CardContent>
-        </Card>
-        <Card className="metric-card">
-          <CardContent className="pt-6 text-center">
-            <UserRound className="mx-auto mb-2 size-5 text-secondary" />
-            <div className="text-3xl font-bold text-secondary">
-              {analytics.participation.anonymousResponses}
-            </div>
-            <TypographySmall className="text-center">Anonymous</TypographySmall>
-          </CardContent>
-        </Card>
+    <div className="analytics-suite">
+      <div className="analytics-hero-panel">
+        <div className="analytics-hero-copy">
+          <div className="analytics-live-pill">
+            <Activity className="size-3.5" />
+            Live analysis
+          </div>
+          <h3>{analytics.totalResponses ? 'Response intelligence is active' : 'Ready for the first signal'}</h3>
+          <p>
+            {strongestOption
+              ? `${strongestOption.label} is leading with ${formatPercentage(strongestOption.percent)} of its question.`
+              : 'Share this poll and the result stream will animate as answers arrive.'}
+          </p>
+        </div>
+        <div className="analytics-orbit" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <i />
+        </div>
       </div>
 
-      {/* Question Results */}
-      <div className="space-y-4">
-        {analytics.questions.map((question) => (
-          <Card key={question.id} className="result-card">
+      <div className="analytics-metric-grid">
+        <MetricCard
+          icon={MessageSquareText}
+          label="Total Responses"
+          value={analytics.totalResponses.toLocaleString()}
+          tone="primary"
+          delay={0}
+        />
+        <MetricCard
+          icon={CircleCheck}
+          label="Completion Rate"
+          value={formatPercentage(analytics.participation.completionRate)}
+          tone="accent"
+          delay={80}
+        />
+        <MetricCard
+          icon={UserRound}
+          label="Anonymous"
+          value={analytics.participation.anonymousResponses.toLocaleString()}
+          tone="secondary"
+          delay={160}
+        />
+        <MetricCard
+          icon={MousePointerClick}
+          label="Avg. Answered"
+          value={averageAnswered.toLocaleString()}
+          tone="blue"
+          delay={240}
+        />
+      </div>
+
+      <div className="analytics-insight-strip">
+        <div>
+          <TrendingUp className="size-4 text-primary" />
+          <span>{analytics.questions.length} questions tracked</span>
+        </div>
+        <div>
+          <CircleCheck className="size-4 text-accent" />
+          <span>{totalAnswered.toLocaleString()} answers captured</span>
+        </div>
+        <div>
+          <Activity className="size-4 text-secondary" />
+          <span>{totalSkipped.toLocaleString()} skipped</span>
+        </div>
+      </div>
+
+      <div className="analytics-results-stack">
+        {analytics.questions.map((question, questionIndex) => (
+          <Card
+            key={question.id}
+            className="result-card analytics-result-card"
+            style={{ animationDelay: `${questionIndex * 90}ms` }}
+          >
             <CardHeader>
-              <CardTitle className="text-lg">{question.text}</CardTitle>
-              <TypographySmall>
-                {question.answered} answered • {question.skipped} skipped
-              </TypographySmall>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {question.options.map((option) => (
-                <div key={option.id} className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{option.label}</span>
-                    <span className="text-sm font-semibold">
-                      {option.count} ({formatPercentage(option.percent)})
-                    </span>
-                  </div>
-                  <Progress
-                    value={option.percent}
-                    className="h-2"
-                  />
+              <div className="analytics-question-head">
+                <div>
+                  <TypographySmall>Question {questionIndex + 1}</TypographySmall>
+                  <CardTitle className="text-lg">{question.text}</CardTitle>
                 </div>
-              ))}
+                <div className="analytics-answer-badge">
+                  <strong>{question.answered}</strong>
+                  <span>answered</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="analytics-option-list">
+                {question.options.map((option, optionIndex) => (
+                  <div key={option.id} className="analytics-option-row">
+                    <div className="analytics-option-meta">
+                      <span className="analytics-option-dot" style={{ backgroundColor: chartColors[optionIndex % chartColors.length] }} />
+                      <span>{option.label}</span>
+                      <b>{option.count} votes</b>
+                    </div>
+                    <div className="analytics-option-score">{formatPercentage(option.percent)}</div>
+                    <div className="analytics-progress-track">
+                      <span
+                        className="analytics-progress-fill"
+                        style={{
+                          width: `${Math.max(option.percent, option.count ? 3 : 0)}%`,
+                          background: `linear-gradient(90deg, ${chartColors[optionIndex % chartColors.length]}, rgba(255,255,255,0.86))`,
+                          animationDelay: `${optionIndex * 120}ms`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {question.options.length > 0 && (
                 <OptionChart options={question.options} />
               )}
+
+              <div className="analytics-card-footer">
+                <span>{question.skipped} skipped</span>
+                <span>{formatPercentage(question.answered + question.skipped ? (question.answered / (question.answered + question.skipped)) * 100 : 0)} engagement</span>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -79,23 +158,78 @@ export function AnalyticsPanel({ analytics }: AnalyticsPanelProps) {
   )
 }
 
-function OptionChart({ options }: { options: any[] }) {
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+  delay,
+}: {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  value: string
+  tone: 'primary' | 'accent' | 'secondary' | 'blue'
+  delay: number
+}) {
+  return (
+    <Card className={`metric-card analytics-metric-card analytics-metric-${tone}`} style={{ animationDelay: `${delay}ms` }}>
+      <CardContent>
+        <div className="analytics-metric-icon">
+          <Icon className="size-5" />
+        </div>
+        <div>
+          <div className="analytics-metric-value">{value}</div>
+          <TypographySmall>{label}</TypographySmall>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function OptionChart({ options }: { options: OptionAnalytics[] }) {
   const chartData = options.map((opt) => ({
     name: opt.label,
     responses: opt.count,
+    percent: opt.percent,
   }))
 
   return (
-    <div className="mt-4 h-64">
+    <div className="analytics-chart-wrap">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="responses" fill="#2dd4bf" />
+        <BarChart data={chartData} margin={{ top: 12, right: 8, left: -22, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 8" stroke="rgba(255,255,255,0.12)" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fill: '#aebccd', fontSize: 11, fontWeight: 700 }}
+            interval={0}
+          />
+          <YAxis tickLine={false} axisLine={false} tick={{ fill: '#aebccd', fontSize: 11 }} allowDecimals={false} />
+          <Tooltip cursor={{ fill: 'rgba(45, 212, 191, 0.08)' }} content={<AnalyticsTooltip />} />
+          <Bar dataKey="responses" radius={[8, 8, 3, 3]} animationDuration={900}>
+            {chartData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  )
+}
+
+function AnalyticsTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) {
+    return null
+  }
+
+  const data = payload[0].payload
+
+  return (
+    <div className="analytics-tooltip">
+      <strong>{label}</strong>
+      <span>{data.responses} responses</span>
+      <small>{formatPercentage(data.percent)}</small>
     </div>
   )
 }

@@ -14,7 +14,7 @@ const defaultOrigins = [
 export function allowedOrigins() {
   const configuredOrigins = process.env.CLIENT_ORIGIN?.split(",")
     .map(normalizeOrigin)
-    .filter(isDefinedOrigin);
+    .filter(isDefinedOrigin) || [];
 
-  return configuredOrigins?.length ? configuredOrigins : defaultOrigins;
+  return [...new Set([...defaultOrigins, ...configuredOrigins])];
 }
