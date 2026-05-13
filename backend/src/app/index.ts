@@ -1,7 +1,6 @@
 import express from "express";
 import { Request, Response } from "express";
 import cors from "cors";
-import "dotenv/config";
 import { allowedOrigins } from "./cors.js";
 import { createAuthRouter } from "./auth/routes.js";
 import { createPollRouter } from "./polls/routes.js";

@@ -1,5 +1,6 @@
+import "dotenv/config";
 import { createServer } from "node:http";
-import process = require("node:process");
+import process from "node:process";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
 import { allowedOrigins } from "./app/cors.js";

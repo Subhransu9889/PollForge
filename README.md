@@ -35,7 +35,7 @@ Create `backend/.env`:
 PORT=4000
 MONGODB_URI=mongodb://127.0.0.1:27017/pollforge
 JWT_SECRET=replace-with-a-long-secret
-CLIENT_ORIGIN=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
 ```
 
 Optionally create `frontend/.env`:
