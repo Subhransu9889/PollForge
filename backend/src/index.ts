@@ -43,7 +43,7 @@ async function main(){
         });
 
         setRealtimeServer(io);
-        const PORT = Number.parseInt(process.env.PORT ?? "4000", 10) || 4000;
+        const PORT = process.env.PORT || 4000;
         server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         })
