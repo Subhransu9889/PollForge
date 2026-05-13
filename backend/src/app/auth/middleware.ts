@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-const jwtSecret = () => process.env.JWT_SECRET ?? "pollforge-dev-secret";
+const jwtSecret = () => process.env.JWT_SECRET!;
 
 export function signToken(user: AuthUser) {
   return jwt.sign(user, jwtSecret(), { expiresIn: "7d" });
