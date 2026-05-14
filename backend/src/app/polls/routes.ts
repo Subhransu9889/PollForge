@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import mongoose from "mongoose";
 import z from "zod";
 import { optionalAuth, requireAuth } from "../auth/middleware.js";
+import { checkCooldown, rateLimit, resetCooldown } from "../rateLimit.js";
 import { PollModel, PollResponseModel } from "./model.js";
 import { emitPollAnalytics } from "./realtime.js";
 import { buildAnalytics } from "./service.js";
@@ -36,6 +37,12 @@ const submitResponseSchema = z.object({
 });
 
 const anonymousDeviceSchema = z.string().trim().min(16).max(160);
+const responseRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+  message: "Too many response attempts. Please wait a minute and try again.",
+  keyPrefix: "poll-response",
+});
 
 function hashDeviceId(deviceId: string) {
   return createHash("sha256").update(deviceId).digest("hex");
@@ -108,7 +115,7 @@ export function createPollRouter() {
     return res.json({ success: true, analytics: await buildAnalytics(pollId) });
   });
 
-  router.post("/:id/responses", optionalAuth, async (req, res) => {
+  router.post("/:id/responses", responseRateLimit, optionalAuth, async (req, res) => {
     const pollId = String(req.params.id);
     const validation = submitResponseSchema.safeParse(req.body);
     if (!validation.success) {
@@ -144,6 +151,9 @@ export function createPollRouter() {
       poll.responseMode === "anonymous" && anonymousDeviceValidation?.success
         ? hashDeviceId(anonymousDeviceValidation.data)
         : null;
+    const cooldownKey = respondentId
+      ? `response:${poll._id.toString()}:user:${respondentId.toString()}`
+      : `response:${poll._id.toString()}:device:${anonymousDeviceId}`;
 
     const existingResponse = await PollResponseModel.findOne(
       respondentId
@@ -184,6 +194,15 @@ export function createPollRouter() {
       questionId: new mongoose.Types.ObjectId(questionId),
       optionId: new mongoose.Types.ObjectId(optionId),
     }));
+    const cooldown = checkCooldown(cooldownKey, 30 * 1000);
+
+    if (!cooldown.allowed) {
+      res.setHeader("Retry-After", String(cooldown.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${cooldown.retryAfterSeconds} seconds before submitting another response.`,
+      });
+    }
 
     try {
       await PollResponseModel.create({
@@ -194,12 +213,14 @@ export function createPollRouter() {
       });
     } catch (error: any) {
       if (error?.code === 11000) {
+        resetCooldown(cooldownKey);
         return res.status(409).json({
           success: false,
           message: "You have already submitted a response to this poll from this device.",
         });
       }
 
+      resetCooldown(cooldownKey);
       throw error;
     }
 

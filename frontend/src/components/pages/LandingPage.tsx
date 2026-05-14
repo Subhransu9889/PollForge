@@ -88,7 +88,7 @@ export function LandingPage() {
           </div>
           <h1>Polls that feel clear, calm, and instantly useful.</h1>
           <TypographyP>
-            PollForge gives teams a refined way to create public polls, collect responses, and publish final results with a smooth glassmorphism interface.
+            PollForge is a modern platform for creating public polls, collecting feedback, and publishing insights with a smooth real-time experience.
           </TypographyP>
           <div className="hero-cta">
             <Link className="landing-button primary large" to={dashboardHref}>

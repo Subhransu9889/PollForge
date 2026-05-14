@@ -162,15 +162,10 @@ The app currently uses a dark realtime dashboard palette with warm PollForge bra
 
 ## Responsive Progress
 
-- Desktop layout uses a two-column hero with the copy on the left and live poll workspace on the right.
-- Analytics uses a two-column layout for result distribution and realtime signal.
-- Feature cards render in a three-column grid on larger screens.
-- At `900px` and below, the hero, analytics, and feature sections collapse into a single-column layout.
-- At `560px` and below, navigation, hero actions, share strip, studio header, and option rows adapt for narrow mobile screens.
+- Landing hero uses a single-column mobile layout and switches to a two-column copy/device composition on large screens.
+- Hero CTAs stack full-width on mobile, then wrap into inline actions from the small breakpoint upward.
+- Feature, review, metric, and analytics grids start as single-column stacks and expand into multi-column layouts on medium, large, and extra-large screens.
+- Published poll results use collapsed question cards by default so public users see only the question, response count, and a `View Details` action until they expand a card.
+- Analytics detail cards, option rows, and charts keep responsive spacing and wrapping so long questions and answer labels do not overflow on narrow screens.
+- Auth, dashboard, poll builder, and public poll surfaces use constrained widths with mobile-first padding, then widen into denser desktop layouts.
 
-## Current Notes
-
-- The frontend is currently static and uses hard-coded sample poll data in `src/App.tsx`.
-- There is no backend integration yet.
-- Poll options, metrics, features, and activity items are local arrays and can be connected to APIs later.
-- The README now tracks the current UI state instead of the default Vite template.

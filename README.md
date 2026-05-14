@@ -32,23 +32,23 @@ npm install
 Create `backend/.env`:
 
 ```bash
-PORT=4000
+PORT=your_port
 MONGODB_URI=your_uri_here
-JWT_SECRET=replace-with-a-long-secret
+JWT_SECRET=your_secret_here
 FRONTEND_URL=http://localhost:5173
 ```
 
 Optionally create `frontend/.env`:
 
 ```bash
-VITE_API_URL=http://localhost:4000
+VITE_API_URL=http://localhost:PORT
 ```
 
 For deployment, set the same backend variables on your backend host:
 
 ```bash
 MONGODB_URI=your-mongodb-connection-string
-JWT_SECRET=your-long-random-secret
+JWT_SECRET=your-random_secret
 FRONTEND_URL=your-frontend-url
 ```
 
@@ -84,6 +84,5 @@ Open `http://localhost:5173`.
 
 ## Submission Links
 
-- Public GitHub repository: add your repository URL here.
-- Deployed project: add your deployed frontend URL here.
-- Backend/API deployment: add your deployed API URL here.
+- Public GitHub repository: https://github.com/Subhransu9889/PollForge
+- Deployed project: https://pollforge-nine.vercel.app
