@@ -747,6 +747,58 @@
     @apply mt-1 text-[0.65rem] font-black uppercase tracking-[0.14em] text-primary;
   }
 
+  .analytics-question-preview {
+    @apply mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-muted;
+  }
+
+  .analytics-question-preview span {
+    @apply rounded-md border border-white/10 bg-white/[0.045] px-2.5 py-1;
+  }
+
+  .analytics-question-actions {
+    @apply flex flex-wrap items-start gap-2 sm:justify-end;
+  }
+
+  .analytics-details-button {
+    @apply h-10 gap-2 border-white/15 bg-white/[0.055] px-3 text-xs font-black text-white hover:bg-primary/15;
+  }
+
+  .analytics-result-card-open {
+    @apply border-primary/25;
+  }
+
+  .analytics-result-card-compact [data-slot="card-header"] {
+    @apply p-5 sm:p-6;
+  }
+
+  .analytics-result-card-compact .analytics-question-head {
+    @apply grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center;
+  }
+
+  .analytics-result-card-compact .analytics-question-head [data-slot="card-title"] {
+    @apply mt-0 text-xl sm:text-2xl;
+  }
+
+  .analytics-compact-response-count {
+    @apply mt-2 text-sm font-bold text-muted;
+  }
+
+  .analytics-summary-grid {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .analytics-summary-grid div {
+    @apply rounded-lg border border-white/10 bg-white/[0.045] p-3;
+  }
+
+  .analytics-summary-grid span {
+    @apply mt-2 block text-xs font-black uppercase tracking-[0.14em] text-white;
+  }
+
+  .analytics-summary-grid p {
+    @apply mt-1 text-sm leading-6 text-muted;
+  }
+
   .analytics-option-list {
     @apply grid gap-3;
   }

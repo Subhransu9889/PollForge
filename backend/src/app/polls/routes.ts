@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createHash } from "node:crypto";
 import mongoose from "mongoose";
 import z from "zod";
 import { optionalAuth, requireAuth } from "../auth/middleware.js";
@@ -33,6 +34,12 @@ const submitResponseSchema = z.object({
     }),
   ),
 });
+
+const anonymousDeviceSchema = z.string().trim().min(16).max(160);
+
+function hashDeviceId(deviceId: string) {
+  return createHash("sha256").update(deviceId).digest("hex");
+}
 
 function publicPoll(poll: any) {
   return {
@@ -121,6 +128,36 @@ export function createPollRouter() {
       return res.status(401).json({ success: false, message: "Please sign in to answer this poll" });
     }
 
+    const respondentId =
+      poll.responseMode === "authenticated" && req.user ? new mongoose.Types.ObjectId(req.user.id) : null;
+    const anonymousDeviceValidation =
+      poll.responseMode === "anonymous" ? anonymousDeviceSchema.safeParse(req.get("x-pollforge-device-id")) : null;
+
+    if (poll.responseMode === "anonymous" && !anonymousDeviceValidation?.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Could not verify this device. Please refresh the page and try again.",
+      });
+    }
+
+    const anonymousDeviceId =
+      poll.responseMode === "anonymous" && anonymousDeviceValidation?.success
+        ? hashDeviceId(anonymousDeviceValidation.data)
+        : null;
+
+    const existingResponse = await PollResponseModel.findOne(
+      respondentId
+        ? { poll: poll._id, respondent: respondentId }
+        : { poll: poll._id, anonymousDeviceId },
+    ).lean();
+
+    if (existingResponse) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already submitted a response to this poll from this device.",
+      });
+    }
+
     const questionIds = new Set(poll.questions.map((question) => question._id.toString()));
     const answersByQuestion = new Map(validation.data.answers.map((answer) => [answer.questionId, answer.optionId]));
     const missingRequired = poll.questions.find(
@@ -148,14 +185,23 @@ export function createPollRouter() {
       optionId: new mongoose.Types.ObjectId(optionId),
     }));
 
-    await PollResponseModel.create({
-      poll: poll._id,
-      respondent:
-        poll.responseMode === "authenticated" && req.user
-          ? new mongoose.Types.ObjectId(req.user.id)
-          : null,
-      answers,
-    });
+    try {
+      await PollResponseModel.create({
+        poll: poll._id,
+        respondent: respondentId,
+        anonymousDeviceId,
+        answers,
+      });
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: "You have already submitted a response to this poll from this device.",
+        });
+      }
+
+      throw error;
+    }
 
     await emitPollAnalytics(pollId);
     return res.status(201).json({ success: true, message: "Response submitted" });

@@ -53,12 +53,17 @@ const responseSchema = new Schema(
   {
     poll: { type: Schema.Types.ObjectId, ref: "Poll", required: true, index: true },
     respondent: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    anonymousDeviceId: { type: String, default: null, trim: true },
     answers: { type: [answerSchema], default: [] },
   },
   { timestamps: true },
 );
 
 responseSchema.index({ poll: 1, respondent: 1 });
+responseSchema.index(
+  { poll: 1, anonymousDeviceId: 1 },
+  { unique: true, partialFilterExpression: { anonymousDeviceId: { $type: "string" } } },
+);
 
 export type PollDocument = InferSchemaType<typeof pollSchema> & { _id: mongoose.Types.ObjectId };
 

@@ -20,6 +20,20 @@ interface PublicPollProps {
   pollId: string
 }
 
+const DEVICE_ID_STORAGE_KEY = 'pollforge_device_id'
+const submittedPollKey = (pollId: string) => `pollforge_submitted_${pollId}`
+
+function getAnonymousDeviceId() {
+  const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY)
+  if (existing) {
+    return existing
+  }
+
+  const deviceId = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  window.localStorage.setItem(DEVICE_ID_STORAGE_KEY, deviceId)
+  return deviceId
+}
+
 export function PublicPoll({ pollId }: PublicPollProps) {
   const { api } = useApi()
   const { token, setToken, setUser } = useAuth()
@@ -29,6 +43,7 @@ export function PublicPoll({ pollId }: PublicPollProps) {
   const [submitting, setSubmitting] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [authLoading, setAuthLoading] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
 
   // Load poll
   useEffect(() => {
@@ -37,6 +52,7 @@ export function PublicPoll({ pollId }: PublicPollProps) {
       .then((data) => {
         if (!isCurrent) return
         setPoll(data.poll)
+        setHasSubmitted(window.localStorage.getItem(submittedPollKey(pollId)) === 'true')
         if (data.analytics) {
           setAnalytics(data.analytics)
         }
@@ -74,6 +90,9 @@ export function PublicPoll({ pollId }: PublicPollProps) {
     try {
       await api(`/api/polls/${pollId}/responses`, {
         method: 'POST',
+        headers: poll.responseMode === 'anonymous'
+          ? { 'X-PollForge-Device-Id': getAnonymousDeviceId() }
+          : undefined,
         body: JSON.stringify({
           answers: Object.entries(answers).map(([questionId, optionId]) => ({
             questionId,
@@ -81,7 +100,16 @@ export function PublicPoll({ pollId }: PublicPollProps) {
           })),
         }),
       })
+      window.localStorage.setItem(submittedPollKey(pollId), 'true')
+      setHasSubmitted(true)
       toast.success('Thanks for your feedback!')
+    } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('already submitted')) {
+        window.localStorage.setItem(submittedPollKey(pollId), 'true')
+        setHasSubmitted(true)
+      }
+
+      throw err
     } finally {
       setSubmitting(false)
     }
@@ -181,7 +209,7 @@ export function PublicPoll({ pollId }: PublicPollProps) {
               <div className="text-center py-6">
                 <TypographyP>Poll results are now published.</TypographyP>
               </div>
-              {analytics && <AnalyticsPanel analytics={analytics} />}
+              {analytics && <AnalyticsPanel analytics={analytics} questionsOnly />}
             </>
           ) : poll.isExpired ? (
             <Alert>
@@ -191,7 +219,13 @@ export function PublicPoll({ pollId }: PublicPollProps) {
             </Alert>
           ) : (
             <>
-              {(poll.responseMode === 'anonymous' || token) && (
+              {hasSubmitted ? (
+                <Alert>
+                  <AlertDescription>
+                    Your response has already been recorded for this poll on this device.
+                  </AlertDescription>
+                </Alert>
+              ) : (poll.responseMode === 'anonymous' || token) && (
                 <ResponseForm
                   poll={poll}
                   onSubmit={handleSubmitResponse}
@@ -201,17 +235,6 @@ export function PublicPoll({ pollId }: PublicPollProps) {
             </>
           )}
 
-          {/* Live Analytics */}
-          {analytics && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Live Results</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AnalyticsPanel analytics={analytics} />
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
