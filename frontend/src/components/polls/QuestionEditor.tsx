@@ -86,6 +86,7 @@ export function QuestionEditor({
               onChange({
                 ...question,
                 type: value,
+                allowMultiple: value === 'choice' ? question.allowMultiple ?? false : false,
                 options: value === 'text' ? [] : question.options.length >= 2 ? question.options : [{ label: '' }, { label: '' }],
               })
             }}
@@ -102,6 +103,27 @@ export function QuestionEditor({
 
         {question.type === 'choice' ? (
           <div className="space-y-2">
+            <div className="space-y-2">
+              <Label>Answer Selection</Label>
+              <Select
+                value={question.allowMultiple ? 'multiple' : 'single'}
+                onValueChange={(value) =>
+                  onChange({
+                    ...question,
+                    allowMultiple: value === 'multiple',
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single choose</SelectItem>
+                  <SelectItem value="multiple">Multiple choose</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="text-sm font-medium text-muted">Options</div>
             {question.options.map((option, optionIndex) => (
               <div key={optionIndex} className="option-row">

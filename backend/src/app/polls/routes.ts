@@ -29,6 +29,7 @@ const createPollSchema = z.object({
         text: z.string().trim().min(3).max(240),
         type: z.enum(["choice", "text"]).default("choice"),
         required: z.boolean().default(true),
+        allowMultiple: z.boolean().default(false),
         options: z.array(optionSchema).max(8).default([]),
       }).superRefine((question, ctx) => {
         if (question.type === "choice" && question.options.length < 2) {
@@ -84,6 +85,7 @@ function publicPoll(poll: any) {
       text: question.text,
       type: question.type ?? "choice",
       required: question.required,
+      allowMultiple: question.allowMultiple ?? false,
       options: question.options.map((option: any) => ({
         id: option._id.toString(),
         label: option.label,
@@ -192,7 +194,12 @@ export function createPollRouter() {
     }
 
     const questionIds = new Set(poll.questions.map((question) => question._id.toString()));
-    const answersByQuestion = new Map(validation.data.answers.map((answer) => [answer.questionId, answer.optionId]));
+    const answersByQuestion = validation.data.answers.reduce((grouped, answer) => {
+      const answers = grouped.get(answer.questionId) ?? [];
+      answers.push(answer);
+      grouped.set(answer.questionId, answers);
+      return grouped;
+    }, new Map<string, typeof validation.data.answers>());
     const missingRequired = poll.questions.find(
       (question) => question.required && !answersByQuestion.has(question._id.toString()),
     );
@@ -201,38 +208,58 @@ export function createPollRouter() {
       return res.status(400).json({ success: false, message: `Required question missing: ${missingRequired.text}` });
     }
 
-    for (const [questionId, optionId] of answersByQuestion) {
+    for (const [questionId, submittedAnswers] of answersByQuestion) {
       if (!questionIds.has(questionId)) {
         return res.status(400).json({ success: false, message: "Answer contains an unknown question" });
       }
 
       const question = poll.questions.find((item) => item._id.toString() === questionId);
       if (question?.type === "text") {
-        const textAnswer = validation.data.answers.find((answer) => answer.questionId === questionId)?.text?.trim();
+        const textAnswer = submittedAnswers[0]?.text?.trim();
         if (!textAnswer) {
           return res.status(400).json({ success: false, message: "Text answer cannot be empty" });
         }
         continue;
       }
 
-      const isKnownOption = optionId && question?.options.some((option) => option._id.toString() === optionId);
-      if (!isKnownOption) {
-        return res.status(400).json({ success: false, message: "Answer contains an unknown option" });
+      const optionIds = submittedAnswers.map((answer) => answer.optionId).filter(Boolean);
+      if (optionIds.length === 0) {
+        return res.status(400).json({ success: false, message: "Choice answer cannot be empty" });
+      }
+
+      if (!question?.allowMultiple && optionIds.length > 1) {
+        return res.status(400).json({ success: false, message: "This question allows only one option" });
+      }
+
+      if (new Set(optionIds).size !== optionIds.length) {
+        return res.status(400).json({ success: false, message: "Answer contains duplicate options" });
+      }
+
+      for (const optionId of optionIds) {
+        const isKnownOption = question?.options.some((option) => option._id.toString() === optionId);
+        if (!isKnownOption) {
+          return res.status(400).json({ success: false, message: "Answer contains an unknown option" });
+        }
       }
     }
 
-    const answers = [...answersByQuestion.entries()].map(([questionId, optionId]) => ({
-      questionId,
-      optionId,
-    })).map(({ questionId, optionId }) => {
+    const answers = [...answersByQuestion.entries()].flatMap(([questionId, submittedAnswers]) => {
       const question = poll.questions.find((item) => item._id.toString() === questionId);
-      const submittedAnswer = validation.data.answers.find((answer) => answer.questionId === questionId);
+      const submittedAnswer = submittedAnswers[0];
 
-      return {
+      if (question?.type === "text") {
+        return [{
+          questionId: new mongoose.Types.ObjectId(questionId),
+          optionId: null,
+          text: submittedAnswer?.text?.trim() ?? "",
+        }];
+      }
+
+      return submittedAnswers.map((answer) => ({
         questionId: new mongoose.Types.ObjectId(questionId),
-        optionId: question?.type === "text" || !optionId ? null : new mongoose.Types.ObjectId(optionId),
-        text: question?.type === "text" ? submittedAnswer?.text?.trim() ?? "" : "",
-      };
+        optionId: answer.optionId ? new mongoose.Types.ObjectId(answer.optionId) : null,
+        text: "",
+      }));
     });
     const cooldown = checkCooldown(cooldownKey, 30 * 1000);
 

@@ -19,7 +19,18 @@ export default function App() {
         <Route path="/p/:pollId" element={<PublicPollRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Toaster position="bottom-right" />
+      <Toaster
+        position="bottom-right"
+        theme="dark"
+        richColors
+        toastOptions={{
+          style: {
+            background: '#0c1824',
+            color: '#eef6ff',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+          },
+        }}
+      />
     </>
   )
 }

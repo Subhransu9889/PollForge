@@ -31,6 +31,11 @@ interface PublicPollProps {
 
 const DEVICE_ID_STORAGE_KEY = 'pollforge_device_id'
 const submittedPollKey = (pollId: string) => `pollforge_submitted_${pollId}`
+type SubmittedAnswer = {
+  questionId: string
+  optionId?: string
+  text?: string
+}
 
 function getAnonymousDeviceId() {
   const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY)
@@ -93,7 +98,7 @@ export function PublicPoll({ pollId }: PublicPollProps) {
     handleAnalyticsUpdate,
   )
 
-  const handleSubmitResponse = async (answers: Record<string, string>) => {
+  const handleSubmitResponse = async (answers: Record<string, string | string[]>) => {
     if (!poll) return
 
     setSubmitting(true)
@@ -105,13 +110,23 @@ export function PublicPoll({ pollId }: PublicPollProps) {
           : undefined,
         body: JSON.stringify({
           answers: poll.questions
-            .filter((question) => answers[question.id!]?.trim())
-            .map((question) => ({
-              questionId: question.id!,
-              ...(question.type === 'text'
-                ? { text: answers[question.id!].trim() }
-                : { optionId: answers[question.id!] }),
-            })),
+            .flatMap<SubmittedAnswer>((question) => {
+              const answer = answers[question.id!]
+
+              if (question.type === 'text') {
+                return typeof answer === 'string' && answer.trim()
+                  ? [{ questionId: question.id!, text: answer.trim() }]
+                  : []
+              }
+
+              if (Array.isArray(answer)) {
+                return answer.map((optionId) => ({ questionId: question.id!, optionId }))
+              }
+
+              return answer?.trim()
+                ? [{ questionId: question.id!, optionId: answer }]
+                : []
+            }),
         }),
       })
       window.localStorage.setItem(submittedPollKey(pollId), 'true')
@@ -254,9 +269,9 @@ export function PublicPoll({ pollId }: PublicPollProps) {
       </div>
 
       <Dialog open={showThankYou} onOpenChange={setShowThankYou}>
-        <DialogContent className="border-white/12 bg-card text-card-foreground">
+        <DialogContent className="border-white/12 !bg-[#090a0a] !text-[#eef6ff] shadow-2xl shadow-black/40">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-white">
+            <DialogTitle className="pr-8 text-2xl font-black text-foreground">
               {poll.thankYouTitle}
             </DialogTitle>
             <DialogDescription className="text-base leading-7 text-muted">
@@ -266,7 +281,7 @@ export function PublicPoll({ pollId }: PublicPollProps) {
           <div className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-black text-primary">
             Powered by PollForge
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-white/10 !bg-white/[0.04]">
             <Button type="button" onClick={() => setShowThankYou(false)}>
               Close
             </Button>

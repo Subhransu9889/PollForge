@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Poll } from '@/types'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,19 +12,24 @@ import { AlertCircle, Loader } from 'lucide-react'
 
 interface ResponseFormProps {
   poll: Poll
-  onSubmit: (answers: Record<string, string>) => Promise<void>
+  onSubmit: (answers: Record<string, string | string[]>) => Promise<void>
   isLoading?: boolean
 }
 
 export function ResponseForm({ poll, onSubmit, isLoading }: ResponseFormProps) {
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [error, setError] = useState<string | null>(null)
+
+  const hasAnswer = (questionId: string) => {
+    const answer = answers[questionId]
+    return Array.isArray(answer) ? answer.length > 0 : Boolean(answer?.trim())
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    const missing = poll.questions.find((q) => q.required && !answers[q.id!]?.trim())
+    const missing = poll.questions.find((q) => q.required && !hasAnswer(q.id!))
     if (missing) {
       setError(`Please answer: ${missing.text}`)
       return
@@ -70,26 +76,63 @@ export function ResponseForm({ poll, onSubmit, isLoading }: ResponseFormProps) {
                   }
                 />
               ) : (
-                <RadioGroup
-                  value={answers[question.id!] || ''}
-                  onValueChange={(value) =>
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [question.id!]: value,
-                    }))
-                  }
-                >
+                question.allowMultiple ? (
                   <div className="space-y-2">
-                    {question.options.map((option) => (
-                      <div key={option.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option.id!} id={option.id} />
-                        <Label htmlFor={option.id} className="cursor-pointer">
-                          {option.label}
-                        </Label>
-                      </div>
-                    ))}
+                    {question.options.map((option) => {
+                      const selectedOptions = Array.isArray(answers[question.id!])
+                        ? answers[question.id!] as string[]
+                        : []
+
+                      return (
+                        <div key={option.id} className="flex items-center space-x-3 rounded-lg border border-border bg-white/[0.035] px-3 py-2.5">
+                          <Checkbox
+                            id={option.id}
+                            checked={selectedOptions.includes(option.id!)}
+                            onCheckedChange={(checked: boolean) =>
+                              setAnswers((prev) => {
+                                const current = Array.isArray(prev[question.id!])
+                                  ? prev[question.id!] as string[]
+                                  : []
+                                const next = checked
+                                  ? [...current, option.id!]
+                                  : current.filter((id) => id !== option.id)
+
+                                return {
+                                  ...prev,
+                                  [question.id!]: next,
+                                }
+                              })
+                            }
+                          />
+                          <Label htmlFor={option.id} className="flex-1 cursor-pointer text-sm leading-6 text-foreground">
+                            {option.label}
+                          </Label>
+                        </div>
+                      )
+                    })}
                   </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup
+                    value={typeof answers[question.id!] === 'string' ? answers[question.id!] as string : ''}
+                    onValueChange={(value) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [question.id!]: value,
+                      }))
+                    }
+                  >
+                    <div className="space-y-2">
+                      {question.options.map((option) => (
+                        <div key={option.id} className="flex items-center space-x-3 rounded-lg border border-border bg-white/[0.035] px-3 py-2.5">
+                          <RadioGroupItem value={option.id!} id={option.id} />
+                          <Label htmlFor={option.id} className="flex-1 cursor-pointer text-sm leading-6 text-foreground">
+                            {option.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                )
               )}
             </CardContent>
           </Card>

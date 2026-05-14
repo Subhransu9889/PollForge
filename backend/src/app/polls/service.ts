@@ -17,12 +17,13 @@ export async function buildAnalytics(pollId: string) {
     }));
 
     const answered = responses.reduce((count, response) => {
-      const answer = response.answers.find((item) => item.questionId.toString() === question._id.toString());
-      if (!answer) {
+      const answers = response.answers.filter((item) => item.questionId.toString() === question._id.toString());
+      if (answers.length === 0) {
         return count;
       }
 
       if ((question as any).type === "text") {
+        const answer = answers[0]!;
         const text = answer.text?.trim();
         if (text) {
           textResponses.push(text);
@@ -31,9 +32,11 @@ export async function buildAnalytics(pollId: string) {
         return count + 1;
       }
 
-      const option = answer.optionId ? options.find((item) => item.id === answer.optionId?.toString()) : undefined;
-      if (option) {
-        option.count += 1;
+      for (const answer of answers) {
+        const option = answer.optionId ? options.find((item) => item.id === answer.optionId?.toString()) : undefined;
+        if (option) {
+          option.count += 1;
+        }
       }
 
       return count + 1;
@@ -43,6 +46,7 @@ export async function buildAnalytics(pollId: string) {
       id: question._id.toString(),
       text: question.text,
       type: (question as any).type ?? "choice",
+      allowMultiple: (question as any).allowMultiple ?? false,
       required: question.required,
       answered,
       skipped: responses.length - answered,

@@ -12,6 +12,7 @@ const questionSchema = new Schema(
     text: { type: String, required: true, trim: true },
     type: { type: String, enum: ["choice", "text"], default: "choice" },
     required: { type: Boolean, default: true },
+    allowMultiple: { type: Boolean, default: false },
     options: {
       type: [optionSchema],
       validate: {

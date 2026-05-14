@@ -16,6 +16,7 @@ export type Question = {
   text: string
   type: 'choice' | 'text'
   required: boolean
+  allowMultiple?: boolean
   options: Option[]
 }
 
@@ -44,6 +45,7 @@ export type Analytics = {
     id: string
     text: string
     type: 'choice' | 'text'
+    allowMultiple?: boolean
     answered: number
     skipped: number
     textResponses?: string[]

@@ -14,6 +14,7 @@ export const questionSchema = z.object({
   text: z.string().min(3, 'Question must be at least 3 characters'),
   type: z.enum(['choice', 'text']),
   required: z.boolean(),
+  allowMultiple: z.boolean().optional(),
   options: z.array(optionSchema).max(8, 'Maximum 8 options allowed'),
 }).superRefine((question, ctx) => {
   if (question.type === 'choice' && question.options.length < 2) {

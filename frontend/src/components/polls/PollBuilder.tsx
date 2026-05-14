@@ -35,6 +35,7 @@ const blankQuestion = (): Question => ({
   text: '',
   type: 'choice',
   required: true,
+  allowMultiple: false,
   options: [{ label: '' }, { label: '' }],
 })
 
