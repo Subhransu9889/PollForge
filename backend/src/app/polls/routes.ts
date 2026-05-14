@@ -14,13 +14,30 @@ const createPollSchema = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().max(500).optional().default(""),
   responseMode: z.enum(["anonymous", "authenticated"]).default("anonymous"),
+  thankYouTitle: z.string().trim().min(1).max(120).optional().default("✨ Thank you for testing PollForge!"),
+  thankYouMessage: z
+    .string()
+    .trim()
+    .min(1)
+    .max(400)
+    .optional()
+    .default("Your feedback helps us improve the experience and build better features for everyone."),
   expiresAt: z.coerce.date().refine((date) => date.getTime() > Date.now(), "Expiry must be in the future"),
   questions: z
     .array(
       z.object({
         text: z.string().trim().min(3).max(240),
+        type: z.enum(["choice", "text"]).default("choice"),
         required: z.boolean().default(true),
-        options: z.array(optionSchema).min(2).max(8),
+        options: z.array(optionSchema).max(8).default([]),
+      }).superRefine((question, ctx) => {
+        if (question.type === "choice" && question.options.length < 2) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["options"],
+            message: "Choice questions need at least two options",
+          });
+        }
       }),
     )
     .min(1)
@@ -31,7 +48,8 @@ const submitResponseSchema = z.object({
   answers: z.array(
     z.object({
       questionId: z.string(),
-      optionId: z.string(),
+      optionId: z.string().optional(),
+      text: z.string().trim().max(1000).optional(),
     }),
   ),
 });
@@ -54,12 +72,17 @@ function publicPoll(poll: any) {
     title: poll.title,
     description: poll.description,
     responseMode: poll.responseMode,
+    thankYouTitle: poll.thankYouTitle ?? "✨ Thank you for testing PollForge!",
+    thankYouMessage:
+      poll.thankYouMessage ??
+      "Your feedback helps us improve the experience and build better features for everyone.",
     expiresAt: poll.expiresAt,
     isExpired: poll.expiresAt.getTime() <= Date.now(),
     isPublished: poll.isPublished,
     questions: poll.questions.map((question: any) => ({
       id: question._id.toString(),
       text: question.text,
+      type: question.type ?? "choice",
       required: question.required,
       options: question.options.map((option: any) => ({
         id: option._id.toString(),
@@ -184,16 +207,33 @@ export function createPollRouter() {
       }
 
       const question = poll.questions.find((item) => item._id.toString() === questionId);
-      const isKnownOption = question?.options.some((option) => option._id.toString() === optionId);
+      if (question?.type === "text") {
+        const textAnswer = validation.data.answers.find((answer) => answer.questionId === questionId)?.text?.trim();
+        if (!textAnswer) {
+          return res.status(400).json({ success: false, message: "Text answer cannot be empty" });
+        }
+        continue;
+      }
+
+      const isKnownOption = optionId && question?.options.some((option) => option._id.toString() === optionId);
       if (!isKnownOption) {
         return res.status(400).json({ success: false, message: "Answer contains an unknown option" });
       }
     }
 
     const answers = [...answersByQuestion.entries()].map(([questionId, optionId]) => ({
-      questionId: new mongoose.Types.ObjectId(questionId),
-      optionId: new mongoose.Types.ObjectId(optionId),
-    }));
+      questionId,
+      optionId,
+    })).map(({ questionId, optionId }) => {
+      const question = poll.questions.find((item) => item._id.toString() === questionId);
+      const submittedAnswer = validation.data.answers.find((answer) => answer.questionId === questionId);
+
+      return {
+        questionId: new mongoose.Types.ObjectId(questionId),
+        optionId: question?.type === "text" || !optionId ? null : new mongoose.Types.ObjectId(optionId),
+        text: question?.type === "text" ? submittedAnswer?.text?.trim() ?? "" : "",
+      };
+    });
     const cooldown = checkCooldown(cooldownKey, 30 * 1000);
 
     if (!cooldown.allowed) {

@@ -12,8 +12,17 @@ export const optionSchema = z.object({
 
 export const questionSchema = z.object({
   text: z.string().min(3, 'Question must be at least 3 characters'),
+  type: z.enum(['choice', 'text']),
   required: z.boolean(),
-  options: z.array(optionSchema).min(2, 'At least 2 options are required'),
+  options: z.array(optionSchema).max(8, 'Maximum 8 options allowed'),
+}).superRefine((question, ctx) => {
+  if (question.type === 'choice' && question.options.length < 2) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['options'],
+      message: 'At least 2 options are required',
+    })
+  }
 })
 
 export const loginSchema = z.object({
@@ -32,6 +41,8 @@ export const createPollSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(160),
   description: z.string().max(500, 'Description must be 500 characters or less'),
   responseMode: z.enum(['anonymous', 'authenticated']),
+  thankYouTitle: z.string().min(1, 'Popup title is required').max(120, 'Popup title must be 120 characters or less'),
+  thankYouMessage: z.string().min(1, 'Popup message is required').max(400, 'Popup message must be 400 characters or less'),
   expiresAt: z
     .string()
     .min(1, 'Expiration is required')
@@ -51,7 +62,8 @@ export const submitResponseSchema = z.object({
   answers: z.array(
     z.object({
       questionId: z.string(),
-      optionId: z.string(),
+      optionId: z.string().optional(),
+      text: z.string().optional(),
     })
   ),
 })

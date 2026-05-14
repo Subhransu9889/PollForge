@@ -4,6 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { GripVertical, Plus, Trash2 } from 'lucide-react'
 
 interface QuestionEditorProps {
@@ -70,55 +77,85 @@ export function QuestionEditor({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-muted">Options</div>
-          {question.options.map((option, optionIndex) => (
-            <div key={optionIndex} className="option-row">
-              <Input
-                placeholder={`Option ${optionIndex + 1}`}
-                value={option.label}
-                onChange={(e) => {
-                  const newOptions = [...question.options]
-                  newOptions[optionIndex] = { ...option, label: e.target.value }
-                  onChange({
-                    ...question,
-                    options: newOptions,
-                  })
-                }}
-              />
-              {optionIndex >= 2 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    const newOptions = question.options.filter((_, i) => i !== optionIndex)
+          <Label>Question Type</Label>
+          <Select
+            value={question.type}
+            onValueChange={(value) => {
+              if (!value) return
+
+              onChange({
+                ...question,
+                type: value,
+                options: value === 'text' ? [] : question.options.length >= 2 ? question.options : [{ label: '' }, { label: '' }],
+              })
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="choice">Multiple choice</SelectItem>
+              <SelectItem value="text">Text response</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {question.type === 'choice' ? (
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-muted">Options</div>
+            {question.options.map((option, optionIndex) => (
+              <div key={optionIndex} className="option-row">
+                <Input
+                  placeholder={`Option ${optionIndex + 1}`}
+                  value={option.label}
+                  onChange={(e) => {
+                    const newOptions = [...question.options]
+                    newOptions[optionIndex] = { ...option, label: e.target.value }
                     onChange({
                       ...question,
                       options: newOptions,
                     })
                   }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          ))}
+                />
+                {optionIndex >= 2 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const newOptions = question.options.filter((_, i) => i !== optionIndex)
+                      onChange({
+                        ...question,
+                        options: newOptions,
+                      })
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              onChange({
-                ...question,
-                options: [...question.options, { label: '' }],
-              })
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Option
-          </Button>
-        </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onChange({
+                  ...question,
+                  options: [...question.options, { label: '' }],
+                })
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Option
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-white/[0.04] px-3 py-2 text-sm text-muted">
+            Respondents will see a text box instead of selectable options.
+          </div>
+        )}
       </CardContent>
     </Card>
   )

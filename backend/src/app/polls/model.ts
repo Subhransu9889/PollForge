@@ -10,12 +10,15 @@ const optionSchema = new Schema(
 const questionSchema = new Schema(
   {
     text: { type: String, required: true, trim: true },
+    type: { type: String, enum: ["choice", "text"], default: "choice" },
     required: { type: Boolean, default: true },
     options: {
       type: [optionSchema],
       validate: {
-        validator: (options: unknown[]) => options.length >= 2,
-        message: "Each question needs at least two options",
+        validator: function (this: { type?: string }, options: unknown[]) {
+          return this.type === "text" || options.length >= 2;
+        },
+        message: "Choice questions need at least two options",
       },
     },
   },
@@ -28,6 +31,12 @@ const pollSchema = new Schema(
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "", trim: true },
     responseMode: { type: String, enum: ["anonymous", "authenticated"], default: "anonymous" },
+    thankYouTitle: { type: String, default: "✨ Thank you for testing PollForge!", trim: true },
+    thankYouMessage: {
+      type: String,
+      default: "Your feedback helps us improve the experience and build better features for everyone.",
+      trim: true,
+    },
     expiresAt: { type: Date, required: true, index: true },
     isPublished: { type: Boolean, default: false },
     questions: {
@@ -44,7 +53,8 @@ const pollSchema = new Schema(
 const answerSchema = new Schema(
   {
     questionId: { type: Schema.Types.ObjectId, required: true },
-    optionId: { type: Schema.Types.ObjectId, required: true },
+    optionId: { type: Schema.Types.ObjectId, default: null },
+    text: { type: String, default: "", trim: true },
   },
   { _id: false },
 );

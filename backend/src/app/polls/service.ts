@@ -8,6 +8,7 @@ export async function buildAnalytics(pollId: string) {
 
   const responses = await PollResponseModel.find({ poll: pollId }).lean();
   const questionSummaries = poll.questions.map((question) => {
+    const textResponses: string[] = [];
     const options = question.options.map((option) => ({
       id: option._id.toString(),
       label: option.label,
@@ -21,7 +22,16 @@ export async function buildAnalytics(pollId: string) {
         return count;
       }
 
-      const option = options.find((item) => item.id === answer.optionId.toString());
+      if ((question as any).type === "text") {
+        const text = answer.text?.trim();
+        if (text) {
+          textResponses.push(text);
+        }
+
+        return count + 1;
+      }
+
+      const option = answer.optionId ? options.find((item) => item.id === answer.optionId?.toString()) : undefined;
       if (option) {
         option.count += 1;
       }
@@ -32,9 +42,11 @@ export async function buildAnalytics(pollId: string) {
     return {
       id: question._id.toString(),
       text: question.text,
+      type: (question as any).type ?? "choice",
       required: question.required,
       answered,
       skipped: responses.length - answered,
+      textResponses,
       options: options.map((option) => ({
         ...option,
         percent: answered === 0 ? 0 : Math.round((option.count / answered) * 100),

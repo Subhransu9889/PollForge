@@ -1,6 +1,6 @@
 # PollForge Frontend
 
-PollForge is a React, TypeScript, Vite, and Tailwind CSS frontend for a realtime polling and feedback platform. The current build is a polished single-page product experience that presents the brand, a live poll workspace, realtime analytics, feature cards, and a recent activity stream.
+PollForge is a React, TypeScript, Vite, and Tailwind CSS frontend for a realtime polling and feedback platform. The current build is a polished product experience with a landing page, creator dashboard, poll builder, public response flow, published result cards, and realtime analytics.
 
 ## Tech Stack
 
@@ -18,8 +18,13 @@ PollForge is a React, TypeScript, Vite, and Tailwind CSS frontend for a realtime
 - Added primary and secondary call-to-action buttons.
 - Added capability chips for public links, anonymous mode, and live charts.
 - Built a live poll workspace panel with poll status, question metadata, answer options, live percentages, and a share link strip.
+- Added a creator dashboard for building, selecting, monitoring, and publishing polls.
+- Added multiple-choice and text-response question types in the poll builder.
+- Added customizable post-submit popup copy with required `Powered by PollForge` attribution.
+- Added anonymous-device duplicate response handling in the public poll flow.
 - Added metrics for responses forged, completion rate, and median answer time.
 - Built a live analytics section with outcome distribution bars.
+- Added collapsed-by-default published question cards with expandable details for charts, summaries, sentiment, and text responses.
 - Added a realtime signal panel with radial visual treatment.
 - Added three feature cards that describe poll creation, realtime analysis, and decision-making.
 - Added a feedback stream section for recent activity.
@@ -168,4 +173,3 @@ The app currently uses a dark realtime dashboard palette with warm PollForge bra
 - Published poll results use collapsed question cards by default so public users see only the question, response count, and a `View Details` action until they expand a card.
 - Analytics detail cards, option rows, and charts keep responsive spacing and wrapping so long questions and answer labels do not overflow on narrow screens.
 - Auth, dashboard, poll builder, and public poll surfaces use constrained widths with mobile-first padding, then widen into denser desktop layouts.
-

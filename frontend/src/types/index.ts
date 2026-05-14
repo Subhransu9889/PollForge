@@ -14,6 +14,7 @@ export type Option = {
 export type Question = {
   id?: string
   text: string
+  type: 'choice' | 'text'
   required: boolean
   options: Option[]
 }
@@ -23,6 +24,8 @@ export type Poll = {
   title: string
   description: string
   responseMode: 'anonymous' | 'authenticated'
+  thankYouTitle: string
+  thankYouMessage: string
   expiresAt: string
   isExpired: boolean
   isPublished: boolean
@@ -40,8 +43,10 @@ export type Analytics = {
   questions: Array<{
     id: string
     text: string
+    type: 'choice' | 'text'
     answered: number
     skipped: number
+    textResponses?: string[]
     options: Array<{
       id: string
       label: string
@@ -55,6 +60,8 @@ export type PollBuilderForm = {
   title: string
   description: string
   responseMode: 'anonymous' | 'authenticated'
+  thankYouTitle: string
+  thankYouMessage: string
   expiresAt: string
   questions: Question[]
 }
@@ -62,6 +69,7 @@ export type PollBuilderForm = {
 export type ResponseForm = {
   answers: Array<{
     questionId: string
-    optionId: string
+    optionId?: string
+    text?: string
   }>
 }

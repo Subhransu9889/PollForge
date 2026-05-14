@@ -803,6 +803,14 @@
     @apply grid gap-3;
   }
 
+  .analytics-text-response-list {
+    @apply grid max-h-80 gap-3 overflow-y-auto pr-1;
+  }
+
+  .analytics-text-response {
+    @apply rounded-lg border border-white/10 bg-white/[0.045] p-3 text-sm leading-6 text-white;
+  }
+
   .analytics-option-row {
     @apply grid gap-2 rounded-lg border border-white/10 bg-white/[0.045] p-3 transition duration-300 hover:border-primary/25 hover:bg-primary/10;
   }

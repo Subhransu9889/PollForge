@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
 import { TypographyH3, TypographySmall } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Loader } from 'lucide-react'
@@ -22,7 +23,7 @@ export function ResponseForm({ poll, onSubmit, isLoading }: ResponseFormProps) {
     e.preventDefault()
     setError(null)
 
-    const missing = poll.questions.find((q) => q.required && !answers[q.id!])
+    const missing = poll.questions.find((q) => q.required && !answers[q.id!]?.trim())
     if (missing) {
       setError(`Please answer: ${missing.text}`)
       return
@@ -56,26 +57,40 @@ export function ResponseForm({ poll, onSubmit, isLoading }: ResponseFormProps) {
                 )}
               </div>
 
-              <RadioGroup
-                value={answers[question.id!] || ''}
-                onValueChange={(value) =>
-                  setAnswers((prev) => ({
-                    ...prev,
-                    [question.id!]: value,
-                  }))
-                }
-              >
-                <div className="space-y-2">
-                  {question.options.map((option) => (
-                    <div key={option.id} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.id!} id={option.id} />
-                      <Label htmlFor={option.id} className="cursor-pointer">
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </RadioGroup>
+              {question.type === 'text' ? (
+                <Textarea
+                  value={answers[question.id!] || ''}
+                  maxLength={1000}
+                  placeholder="Share your feedback anonymously"
+                  onChange={(event) =>
+                    setAnswers((prev) => ({
+                      ...prev,
+                      [question.id!]: event.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                <RadioGroup
+                  value={answers[question.id!] || ''}
+                  onValueChange={(value) =>
+                    setAnswers((prev) => ({
+                      ...prev,
+                      [question.id!]: value,
+                    }))
+                  }
+                >
+                  <div className="space-y-2">
+                    {question.options.map((option) => (
+                      <div key={option.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.id!} id={option.id} />
+                        <Label htmlFor={option.id} className="cursor-pointer">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              )}
             </CardContent>
           </Card>
         ))}

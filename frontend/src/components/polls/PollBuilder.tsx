@@ -33,6 +33,7 @@ interface PollBuilderProps {
 
 const blankQuestion = (): Question => ({
   text: '',
+  type: 'choice',
   required: true,
   options: [{ label: '' }, { label: '' }],
 })
@@ -46,6 +47,8 @@ const defaultFormValues = (): CreatePollFormData => ({
   title: '',
   description: '',
   responseMode: 'anonymous',
+  thankYouTitle: '✨ Thank you for testing PollForge!',
+  thankYouMessage: 'Your feedback helps us improve the experience and build better features for everyone.',
   expiresAt: toLocalDateTimeInputValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   questions: [blankQuestion()],
 })
@@ -153,6 +156,44 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
                       <Input
                         type="datetime-local"
                         min={toLocalDateTimeInputValue(new Date())}
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="builder-field-grid">
+              <FormField
+                control={form.control}
+                name="thankYouTitle"
+                render={({ field }: { field: PollField<'thankYouTitle'> }) => (
+                  <FormItem>
+                    <FormLabel>Popup Title</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="✨ Thank you for testing PollForge!"
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="thankYouMessage"
+                render={({ field }: { field: PollField<'thankYouMessage'> }) => (
+                  <FormItem>
+                    <FormLabel>Popup Message</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Your feedback helps us improve the experience and build better features for everyone."
                         {...field}
                         disabled={isLoading}
                       />

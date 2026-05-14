@@ -135,7 +135,7 @@ function QuestionResultCard({
   const [isOpen, setIsOpen] = useState(false)
   const total = question.answered + question.skipped
   const engagement = total ? (question.answered / total) * 100 : 0
-  const topOption = [...question.options].sort((a, b) => b.count - a.count)[0]
+  const topOption = question.type === 'choice' ? [...question.options].sort((a, b) => b.count - a.count)[0] : undefined
   const sentiment = getQuestionSentiment(question, topOption)
   const summary = getQuestionSummary(question, topOption)
 
@@ -156,6 +156,7 @@ function QuestionResultCard({
                 <span>{question.answered.toLocaleString()} responses</span>
                 <span>{question.skipped.toLocaleString()} skipped</span>
                 {topOption && <span>Leading: {topOption.label}</span>}
+                {question.type === 'text' && <span>Text response</span>}
               </div>
             )}
           </div>
@@ -195,31 +196,47 @@ function QuestionResultCard({
             </div>
           </div>
 
-          <div className="analytics-option-list">
-            {question.options.map((option, optionIndex) => (
-              <div key={option.id} className="analytics-option-row">
-                <div className="analytics-option-meta">
-                  <span className="analytics-option-dot" style={{ backgroundColor: chartColors[optionIndex % chartColors.length] }} />
-                  <span>{option.label}</span>
-                  <b>{option.count} votes</b>
-                </div>
-                <div className="analytics-option-score">{formatPercentage(option.percent)}</div>
-                <div className="analytics-progress-track">
-                  <span
-                    className="analytics-progress-fill"
-                    style={{
-                      width: `${Math.max(option.percent, option.count ? 3 : 0)}%`,
-                      background: `linear-gradient(90deg, ${chartColors[optionIndex % chartColors.length]}, rgba(255,255,255,0.86))`,
-                      animationDelay: `${optionIndex * 120}ms`,
-                    }}
-                  />
-                </div>
+          {question.type === 'text' ? (
+            <div className="analytics-text-response-list">
+              {(question.textResponses ?? []).length > 0 ? (
+                question.textResponses?.map((response, index) => (
+                  <div key={`${question.id}-text-${index}`} className="analytics-text-response">
+                    {response}
+                  </div>
+                ))
+              ) : (
+                <div className="analytics-text-response">No text responses yet.</div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="analytics-option-list">
+                {question.options.map((option, optionIndex) => (
+                  <div key={option.id} className="analytics-option-row">
+                    <div className="analytics-option-meta">
+                      <span className="analytics-option-dot" style={{ backgroundColor: chartColors[optionIndex % chartColors.length] }} />
+                      <span>{option.label}</span>
+                      <b>{option.count} votes</b>
+                    </div>
+                    <div className="analytics-option-score">{formatPercentage(option.percent)}</div>
+                    <div className="analytics-progress-track">
+                      <span
+                        className="analytics-progress-fill"
+                        style={{
+                          width: `${Math.max(option.percent, option.count ? 3 : 0)}%`,
+                          background: `linear-gradient(90deg, ${chartColors[optionIndex % chartColors.length]}, rgba(255,255,255,0.86))`,
+                          animationDelay: `${optionIndex * 120}ms`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {question.options.length > 0 && (
-            <OptionChart options={question.options} />
+              {question.options.length > 0 && (
+                <OptionChart options={question.options} />
+              )}
+            </>
           )}
 
           <div className="analytics-card-footer">
@@ -238,7 +255,9 @@ function getQuestionSummary(question: QuestionAnalytics, topOption?: OptionAnaly
   }
 
   if (!topOption) {
-    return `${question.answered.toLocaleString()} responses were recorded.`
+    return question.type === 'text'
+      ? `${question.answered.toLocaleString()} text responses were recorded.`
+      : `${question.answered.toLocaleString()} responses were recorded.`
   }
 
   return `${topOption.label} leads with ${formatPercentage(topOption.percent)} across ${question.answered.toLocaleString()} responses.`
@@ -246,7 +265,9 @@ function getQuestionSummary(question: QuestionAnalytics, topOption?: OptionAnaly
 
 function getQuestionSentiment(question: QuestionAnalytics, topOption?: OptionAnalytics) {
   if (!question.answered || !topOption) {
-    return 'Waiting for enough responses to read the signal.'
+    return question.type === 'text'
+      ? 'Open-ended feedback is ready for review.'
+      : 'Waiting for enough responses to read the signal.'
   }
 
   if (topOption.percent >= 65) {
