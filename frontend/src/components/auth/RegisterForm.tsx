@@ -57,7 +57,7 @@ export function RegisterForm({ onSubmit, isLoading, onSwitchToLogin }: RegisterF
                 <FormLabel>First Name</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="John"
+                    placeholder="Subransu"
                     {...field}
                     disabled={isLoading}
                   />
@@ -75,7 +75,7 @@ export function RegisterForm({ onSubmit, isLoading, onSwitchToLogin }: RegisterF
                 <FormLabel>Last Name</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Doe"
+                    placeholder="Maharana"
                     {...field}
                     disabled={isLoading}
                   />
