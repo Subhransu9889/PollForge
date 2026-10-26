@@ -173,3 +173,15 @@ The app currently uses a dark realtime dashboard palette with warm PollForge bra
 - Published poll results use collapsed question cards by default so public users see only the question, response count, and a `View Details` action until they expand a card.
 - Analytics detail cards, option rows, and charts keep responsive spacing and wrapping so long questions and answer labels do not overflow on narrow screens.
 - Auth, dashboard, poll builder, and public poll surfaces use constrained widths with mobile-first padding, then widen into denser desktop layouts.
+
+## Poll workflow features
+
+- **Duplicate poll:** Open a poll's results and choose **Duplicate poll**. Confirm replacement of the current draft, then review the copy in the builder. Question and option IDs, responses, and publication status are not copied. Expiry defaults to 24 hours from duplication. Creating the copy uses the normal authenticated poll-creation API.
+- **QR sharing:** Choose **Share QR code** in a poll's results. The code is generated locally and can be downloaded as a PNG. It links to the public poll URL; existing authentication and expiry rules still apply.
+- **Draft autosave:** One draft per account is stored in this browser's local storage. Incomplete fields are saved after a short debounce, and pending changes are flushed on page hide or unmount. Drafts restore when the builder opens and clear after successful creation or confirmed discard. Storage failures are shown in the builder. Drafts do not sync across devices, and clearing browser storage removes them.
+
+## Browser regression tests
+
+Run `npm run test:e2e` after installing Playwright's Chromium (`npx playwright install chromium`). Alternatively, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to an existing Chrome/Chromium executable. The test runner starts a local Vite server on port 4173 and mocks the poll API; it does not create real polls.
+
+The suite covers draft restoration, account isolation, immediate reload, discard/cancel, corrupt storage, storage quota failures, poll duplication, failed/successful creation, and mobile QR decoding/download.

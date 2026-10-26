@@ -1,4 +1,8 @@
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { usePollDraft } from '@/hooks/usePollDraft'
+import { draftKey, parseDraft } from '@/utils/pollDraft'
+import { THANK_YOU_TITLE } from '@/constants'
+import { useForm, useWatch } from 'react-hook-form'
 import type { ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createPollSchema } from '@/utils/validation'
@@ -29,6 +33,8 @@ import { CalendarClock, Loader, Plus, Wand2 } from 'lucide-react'
 interface PollBuilderProps {
   onSubmit: (data: CreatePollFormData) => Promise<void>
   isLoading?: boolean
+  userId: string
+  initialValues?: CreatePollFormData
 }
 
 const blankQuestion = (): Question => ({
@@ -48,7 +54,7 @@ const defaultFormValues = (): CreatePollFormData => ({
   title: '',
   description: '',
   responseMode: 'anonymous',
-  thankYouTitle: '✨ Thank you for testing PollForge!',
+  thankYouTitle: THANK_YOU_TITLE,
   thankYouMessage: 'Your feedback helps us improve the experience and build better features for everyone.',
   expiresAt: toLocalDateTimeInputValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   questions: [blankQuestion()],
@@ -56,18 +62,29 @@ const defaultFormValues = (): CreatePollFormData => ({
 
 type PollField<TName extends keyof CreatePollFormData> = ControllerRenderProps<CreatePollFormData, TName>
 
-export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
+export function PollBuilder({ onSubmit, isLoading, userId, initialValues }: PollBuilderProps) {
+  const [initial] = useState(() => {
+    if (initialValues) return { values: initialValues, status: 'Saving copied poll as a draft…' }
+    try {
+      const draft = parseDraft(localStorage.getItem(draftKey(userId)))
+      return { values: draft?.values ?? defaultFormValues(), status: draft ? 'Saved draft restored from this device' : 'Drafts save automatically on this device' }
+    } catch {
+      return { values: defaultFormValues(), status: 'Saved draft unavailable. Browser storage may be blocked or the draft may be damaged.' }
+    }
+  })
   const form = useForm<CreatePollFormData>({
     resolver: zodResolver(createPollSchema),
-    defaultValues: defaultFormValues(),
+    defaultValues: initial.values,
   })
 
-  const questions = form.watch('questions')
+  const questions = useWatch({ control: form.control, name: 'questions' })
+  const { status, clearDraft } = usePollDraft(form, userId, initial.status, initialValues)
 
   const handleSubmit = async (data: CreatePollFormData) => {
     try {
       await onSubmit(data)
       form.reset(defaultFormValues())
+      clearDraft()
     } catch {
       // Error is handled by parent
     }
@@ -76,6 +93,8 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="poll-builder-form">
+        <div className="draft-status-bar"><span role="status">{status}</span><Button type="button" variant="ghost" disabled={isLoading} onClick={() => { if (window.confirm('Discard this draft and start a blank poll?')) { form.reset(defaultFormValues()); clearDraft() } }}>Discard draft</Button></div>
+        <fieldset disabled={isLoading} className="min-w-0 space-y-4">
         <Card>
           <CardHeader className="dashboard-card-head">
             <div>
@@ -168,23 +187,11 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
             </div>
 
             <div className="builder-field-grid">
-              <FormField
-                control={form.control}
-                name="thankYouTitle"
-                render={({ field }: { field: PollField<'thankYouTitle'> }) => (
-                  <FormItem>
-                    <FormLabel>Popup Title</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="✨ Thank you for testing PollForge!"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Popup title</p>
+                <p className="rounded-lg border border-border bg-white/5 px-3 py-3 text-sm">{THANK_YOU_TITLE}</p>
+                <p className="text-xs text-muted">This title is fixed for every poll.</p>
+              </div>
 
               <FormField
                 control={form.control}
@@ -222,11 +229,11 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
               onChange={(updated) => {
                 const newQuestions = [...questions]
                 newQuestions[index] = updated
-                form.setValue('questions', newQuestions)
+                form.setValue('questions', newQuestions, { shouldDirty: true })
               }}
               onRemove={() => {
                 const newQuestions = questions.filter((_, i) => i !== index)
-                form.setValue('questions', newQuestions)
+                form.setValue('questions', newQuestions, { shouldDirty: true })
               }}
             />
           ))}
@@ -237,9 +244,9 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
             type="button"
             variant="outline"
             onClick={() => {
-              form.setValue('questions', [...questions, blankQuestion()])
+              form.setValue('questions', [...questions, blankQuestion()], { shouldDirty: true })
             }}
-            disabled={isLoading}
+            disabled={isLoading || questions.length >= 20}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Question
@@ -250,6 +257,8 @@ export function PollBuilder({ onSubmit, isLoading }: PollBuilderProps) {
           {isLoading && <Loader className="w-4 h-4 mr-2 animate-spin" />}
           Create Poll
         </Button>
+        <p className="text-sm text-destructive" role="alert">{form.formState.errors.questions?.message || form.formState.errors.questions?.root?.message}</p>
+        </fieldset>
       </form>
     </Form>
   )

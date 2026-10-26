@@ -1,13 +1,12 @@
 import type { Analytics } from '@/types'
 import type { ComponentType } from 'react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TypographySmall } from '@/components/ui/typography'
 import { formatPercentage } from '@/utils/formatting'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import {
-  Activity,
   BarChart3,
   ChevronDown,
   CircleCheck,
@@ -31,36 +30,18 @@ const chartColors = ['#2dd4bf', '#f4a261', '#b8f7c2', '#8ab4ff', '#f7b2d9', '#d8
 export function AnalyticsPanel({ analytics, questionsOnly = false }: AnalyticsPanelProps) {
   const totalAnswered = analytics.questions.reduce((sum, question) => sum + question.answered, 0)
   const totalSkipped = analytics.questions.reduce((sum, question) => sum + question.skipped, 0)
-  const averageAnswered = analytics.questions.length ? Math.round(totalAnswered / analytics.questions.length) : 0
-  const strongestOption = analytics.questions
-    .flatMap((question) => question.options.map((option) => ({ ...option, question: question.text })))
-    .sort((a, b) => b.percent - a.percent)[0]
+  const answerRate = totalAnswered + totalSkipped ? (totalAnswered / (totalAnswered + totalSkipped)) * 100 : 0
+  const responseTypes = [
+    { label: 'Anonymous', count: analytics.participation.anonymousResponses, color: '#5eead4' },
+    { label: 'Authenticated', count: analytics.participation.authenticatedResponses, color: '#a5b4fc' },
+  ]
+
 
   return (
     <div className="analytics-suite">
       {!questionsOnly && (
         <>
-          <div className="analytics-hero-panel">
-            <div className="analytics-hero-copy">
-              <div className="analytics-live-pill">
-                <Activity className="size-3.5" />
-                Live analysis
-              </div>
-              <h3>{analytics.totalResponses ? 'Response intelligence is active' : 'Ready for the first signal'}</h3>
-              <p>
-                {strongestOption
-                  ? `${strongestOption.label} is leading with ${formatPercentage(strongestOption.percent)} of its question.`
-                  : 'Share this poll and the result stream will animate as answers arrive.'}
-              </p>
-            </div>
-            <div className="analytics-orbit" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <i />
-            </div>
-          </div>
-
+          <div className="analysis-section-heading"><div><p className="eyebrow">THE BIG PICTURE</p><h3>Every response tells a story.</h3></div></div>
           <div className="analytics-metric-grid">
             <MetricCard
               icon={MessageSquareText}
@@ -85,27 +66,25 @@ export function AnalyticsPanel({ analytics, questionsOnly = false }: AnalyticsPa
             />
             <MetricCard
               icon={MousePointerClick}
-              label="Avg. Answered"
-              value={averageAnswered.toLocaleString()}
+              label="Question answer rate"
+              value={formatPercentage(answerRate)}
               tone="blue"
               delay={240}
             />
           </div>
 
-          <div className="analytics-insight-strip">
-            <div>
-              <TrendingUp className="size-4 text-primary" />
-              <span>{analytics.questions.length} questions tracked</span>
-            </div>
-            <div>
-              <CircleCheck className="size-4 text-accent" />
-              <span>{totalAnswered.toLocaleString()} answers captured</span>
-            </div>
-            <div>
-              <Activity className="size-4 text-secondary" />
-              <span>{totalSkipped.toLocaleString()} skipped</span>
-            </div>
+          <div className="analysis-overview-grid">
+            <section className="analysis-participation"><div className="analysis-block-title"><UsersIcon /><h4>Who’s participating</h4></div>
+              <p>Response identity across this poll</p>
+              <div className="participation-track" aria-hidden="true">{responseTypes.map(type => <span key={type.label} style={{ width: `${analytics.totalResponses ? type.count / analytics.totalResponses * 100 : 0}%`, background: type.color }} />)}</div>
+              {responseTypes.map(type => <div className="participation-legend" key={type.label}><span><i style={{ background: type.color }} />{type.label}</span><strong>{type.count.toLocaleString()}<small>{formatPercentage(analytics.totalResponses ? type.count / analytics.totalResponses * 100 : 0)}</small></strong></div>)}
+            </section>
+            <section className="analysis-coverage"><div className="analysis-block-title"><CircleCheck className="size-4" /><h4>Response coverage</h4></div><p>How often questions receive an answer</p>
+              <div className="coverage-number">{formatPercentage(answerRate)}<span>of question opportunities answered</span></div>
+              <div className="coverage-footer"><span><b>{totalAnswered.toLocaleString()}</b> answered</span><span><b>{totalSkipped.toLocaleString()}</b> skipped</span><span><b>{analytics.questions.length}</b> questions</span></div>
+            </section>
           </div>
+          <div className="analysis-results-heading"><h3>Question breakdown</h3><span>{analytics.questions.length} questions · Counts update as responses arrive</span></div>
         </>
       )}
 
@@ -132,10 +111,12 @@ function QuestionResultCard({
   questionIndex: number
   compact: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(questionIndex === 0)
+  const [chartView, setChartView] = useState(false)
+  const detailsId = useId()
   const total = question.answered + question.skipped
   const engagement = total ? (question.answered / total) * 100 : 0
-  const topOption = question.type === 'choice' ? [...question.options].sort((a, b) => b.count - a.count)[0] : undefined
+  const topOption = question.type === 'choice' && question.answered > 0 ? [...question.options].sort((a, b) => b.count - a.count)[0] : undefined
   const sentiment = getQuestionSentiment(question, topOption)
   const summary = getQuestionSummary(question, topOption)
 
@@ -171,6 +152,7 @@ function QuestionResultCard({
               size="sm"
               className="analytics-details-button"
               aria-expanded={isOpen}
+              aria-controls={detailsId}
               onClick={() => setIsOpen((current) => !current)}
             >
               <BarChart3 className="size-4" />
@@ -182,16 +164,16 @@ function QuestionResultCard({
       </CardHeader>
 
       {isOpen && (
-        <CardContent className="space-y-4">
+        <CardContent id={detailsId} className="space-y-4">
           <div className="analytics-summary-grid">
             <div>
               <Sparkles className="size-4 text-primary" />
-              <span>AI summary</span>
+              <span>Response summary</span>
               <p>{summary}</p>
             </div>
             <div>
               <TrendingUp className="size-4 text-secondary" />
-              <span>Sentiment</span>
+              <span>Distribution</span>
               <p>{sentiment}</p>
             </div>
           </div>
@@ -210,7 +192,8 @@ function QuestionResultCard({
             </div>
           ) : (
             <>
-              <div className="analytics-option-list">
+              <div className="analysis-chart-toggle"><span>Response distribution</span><Button variant="outline" size="sm" aria-pressed={chartView} onClick={() => setChartView(value => !value)}>{chartView ? 'Show breakdown' : 'Show chart'}</Button></div>
+              <div className="analytics-option-list" style={{ display: chartView ? 'none' : undefined }}>
                 {question.options.map((option, optionIndex) => (
                   <div key={option.id} className="analytics-option-row">
                     <div className="analytics-option-meta">
@@ -223,7 +206,7 @@ function QuestionResultCard({
                       <span
                         className="analytics-progress-fill"
                         style={{
-                          width: `${Math.max(option.percent, option.count ? 3 : 0)}%`,
+                          width: `${Math.min(100, Math.max(0, option.percent))}%`,
                           background: `linear-gradient(90deg, ${chartColors[optionIndex % chartColors.length]}, rgba(255,255,255,0.86))`,
                           animationDelay: `${optionIndex * 120}ms`,
                         }}
@@ -233,7 +216,7 @@ function QuestionResultCard({
                 ))}
               </div>
 
-              {question.options.length > 0 && (
+              {chartView && question.options.length > 0 && (
                 <OptionChart options={question.options} />
               )}
             </>
@@ -249,6 +232,8 @@ function QuestionResultCard({
   )
 }
 
+function UsersIcon() { return <UserRound className="size-4" /> }
+
 function getQuestionSummary(question: QuestionAnalytics, topOption?: OptionAnalytics) {
   if (!question.answered) {
     return 'No responses have been recorded for this question yet.'
@@ -260,25 +245,24 @@ function getQuestionSummary(question: QuestionAnalytics, topOption?: OptionAnaly
       : `${question.answered.toLocaleString()} responses were recorded.`
   }
 
+  const tied = question.options.filter(option => option.count === topOption.count).length > 1
+  if (tied) return `The top choices are tied at ${topOption.count} votes each across ${question.answered.toLocaleString()} responses.`
   return `${topOption.label} leads with ${formatPercentage(topOption.percent)} across ${question.answered.toLocaleString()} responses.`
 }
 
 function getQuestionSentiment(question: QuestionAnalytics, topOption?: OptionAnalytics) {
   if (!question.answered || !topOption) {
-    return question.type === 'text'
+    return question.answered && question.type === 'text'
       ? 'Open-ended feedback is ready for review.'
-      : 'Waiting for enough responses to read the signal.'
+      : 'No response distribution is available yet.'
   }
 
-  if (topOption.percent >= 65) {
-    return 'Strong consensus around the leading choice.'
-  }
-
-  if (topOption.percent >= 40) {
-    return 'Moderate preference, with room for mixed opinions.'
-  }
-
-  return 'Responses are distributed, so the audience is split.'
+  if (question.allowMultiple) return 'Multiple selections are allowed. Percentages may total more than 100%.'
+  const sorted = [...question.options].sort((a, b) => b.count - a.count)
+  const gap = sorted.length > 1 ? sorted[0].count - sorted[1].count : 0
+  if (sorted.length < 2) return 'Only one choice is available for this question.'
+  if (gap === 0) return 'The leading choices are tied. No single choice is ahead.'
+  return `The leading choice is ahead by ${gap} ${gap === 1 ? 'vote' : 'votes'}. Based on ${question.answered} responses so far.`
 }
 
 function MetricCard({
@@ -327,10 +311,11 @@ function OptionChart({ options }: { options: OptionAnalytics[] }) {
             axisLine={false}
             tick={{ fill: '#aebccd', fontSize: 11, fontWeight: 700 }}
             interval={0}
+            tickFormatter={(value: string) => value.length > 14 ? `${value.slice(0, 12)}…` : value}
           />
           <YAxis tickLine={false} axisLine={false} tick={{ fill: '#aebccd', fontSize: 11 }} allowDecimals={false} />
           <Tooltip cursor={{ fill: 'rgba(45, 212, 191, 0.08)' }} content={<AnalyticsTooltip />} />
-          <Bar dataKey="responses" radius={[8, 8, 3, 3]} animationDuration={900}>
+          <Bar dataKey="responses" radius={[8, 8, 3, 3]} isAnimationActive={false}>
             {chartData.map((_, index) => (
               <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
             ))}
@@ -341,12 +326,13 @@ function OptionChart({ options }: { options: OptionAnalytics[] }) {
   )
 }
 
-function AnalyticsTooltip({ active, payload, label }: any) {
+function AnalyticsTooltip({ active, payload, label }: { active?: boolean; payload?: ReadonlyArray<{ payload?: { responses: number; percent: number } }>; label?: string | number }) {
   if (!active || !payload?.length) {
     return null
   }
 
   const data = payload[0].payload
+  if (!data) return null
 
   return (
     <div className="analytics-tooltip">

@@ -14,7 +14,7 @@ const createPollSchema = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().max(500).optional().default(""),
   responseMode: z.enum(["anonymous", "authenticated"]).default("anonymous"),
-  thankYouTitle: z.string().trim().min(1).max(120).optional().default("✨ Thank you for testing PollForge!"),
+  thankYouTitle: z.unknown().transform(() => "✨ Thank you for testing PollForge!"),
   thankYouMessage: z
     .string()
     .trim()
@@ -73,7 +73,7 @@ function publicPoll(poll: any) {
     title: poll.title,
     description: poll.description,
     responseMode: poll.responseMode,
-    thankYouTitle: poll.thankYouTitle ?? "✨ Thank you for testing PollForge!",
+    thankYouTitle: "✨ Thank you for testing PollForge!",
     thankYouMessage:
       poll.thankYouMessage ??
       "Your feedback helps us improve the experience and build better features for everyone.",

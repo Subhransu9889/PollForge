@@ -34,3 +34,5 @@ export const SUCCESS_MESSAGES = {
   RESPONSE_SUBMITTED: 'Thanks, your feedback was submitted.',
   RESULTS_PUBLISHED: 'Final results published on the same public link.',
 } as const
+
+export const THANK_YOU_TITLE = '✨ Thank you for testing PollForge!'

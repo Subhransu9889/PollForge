@@ -1,20 +1,24 @@
+import './landing-features.css'
+import { HeroPreview } from '@/components/pages/HeroPreview'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { TypographyP } from '@/components/ui/typography'
 import {
   ArrowRight,
+  ArrowUpRight,
   BarChart3,
   CheckCircle2,
   Clock3,
+  Copy,
+  QrCode,
+  Save,
+  Download,
   Eye,
-  Gauge,
   MessageCircle,
   MousePointer2,
   RadioTower,
   ShieldCheck,
   Sparkles,
-  Star,
-  UsersRound,
 } from 'lucide-react'
 
 const features = [
@@ -35,21 +39,27 @@ const features = [
   },
 ]
 
+const highlights = [
+  { icon: Copy, title: 'Great questions deserve a second round.', label: 'DUPLICATE POLLS', text: 'Reuse questions and settings in an editable copy. Start fresh with a new expiry and no previous responses.', detail: 'Copy → Review → Create', tone: 'mint' },
+  { icon: QrCode, title: 'From your screen to their phone.', label: 'QR SHARING', text: 'Share a scannable poll code at a meeting, on a slide, or in person. Download the QR image and put it where your audience is.', detail: 'Scan → Open → Respond', tone: 'lavender' },
+  { icon: Save, title: 'Pick up where you left off.', label: 'DRAFT AUTOSAVE', text: 'Your unfinished poll saves automatically as you work. Return to the builder to restore your draft, even after a reload.', detail: 'Saved per account in this browser · No cross-device sync', tone: 'peach' },
+]
+
 const reviews = [
   {
-    name: 'Maya S.',
-    role: 'Product Lead',
-    quote: 'PollForge replaced three scattered forms for us. The share link and live results made decisions feel much cleaner.',
+    name: 'Product teams',
+    role: 'Prioritize with confidence',
+    quote: 'Ask customers what matters most, compare feature ideas, and bring feedback into your next planning session.',
   },
   {
-    name: 'Arjun K.',
-    role: 'Community Manager',
-    quote: 'The public poll page feels polished enough to send to customers without explaining anything first.',
+    name: 'Communities',
+    role: 'Give everyone a voice',
+    quote: 'Choose your next event, gather member feedback, and share the outcome with your community.',
   },
   {
-    name: 'Nina R.',
-    role: 'Founder',
-    quote: 'Fast to create, simple to answer, and the published result page gives every stakeholder the same picture.',
+    name: 'Everyday collaboration',
+    role: 'Move a decision forward',
+    quote: 'Send one link to your team, collect responses in one place, and publish results everyone can reference.',
   },
 ]
 
@@ -68,7 +78,7 @@ export function LandingPage() {
         </Link>
         <div className="landing-nav-actions">
           <a href="#overview">Overview</a>
-          <a href="#reviews">Reviews</a>
+          <a href="#use-cases">Use cases</a>
           {token && user ? (
             <Link className="landing-button primary" to="/dashboard">Dashboard</Link>
           ) : (
@@ -84,72 +94,32 @@ export function LandingPage() {
         <div className="hero-copy">
           <div className="hero-badge">
             <Sparkles className="size-4" />
-            Premium Designed Live Poll
+            Better questions. Clearer decisions.
           </div>
-          <h1>Polls that feel clear, calm, and instantly useful.</h1>
+          <h1>One question.<br />Many voices.<br /><span className="hero-highlight">A clear direction.</span></h1>
           <TypographyP>
-            PollForge is a modern platform for creating public polls, collecting feedback, and publishing insights with a smooth real-time experience.
+            Bring every voice into the conversation. Create a poll, share it anywhere, and watch the answers become your next big decision.
           </TypographyP>
           <div className="hero-cta">
             <Link className="landing-button primary large" to={dashboardHref}>
               Start building
               <ArrowRight className="size-4" />
             </Link>
-            <a className="landing-button outline large" href="#overview">Watch overview</a>
+            <a className="landing-button outline large" href="#overview">Explore the features</a>
           </div>
           <div className="hero-proof">
             <span><CheckCircle2 className="size-4" /> Anonymous or authenticated</span>
             <span><CheckCircle2 className="size-4" /> Realtime analytics</span>
-            <span><CheckCircle2 className="size-4" /> Published reviews</span>
+            <span><CheckCircle2 className="size-4" /> Shareable results</span>
           </div>
         </div>
 
-        <div className="hero-device" aria-hidden="true">
-          <div className="device-glow" />
-          <div className="glass-device">
-            <div className="device-top">
-              <div className="traffic-lights">
-                <i />
-                <i />
-                <i />
-              </div>
-              <span>Live Poll Overview</span>
-            </div>
-            <div className="device-body">
-              <div className="floating-card card-question">
-                <span className="mini-label">Today</span>
-                <strong>Which launch message wins?</strong>
-                <div className="poll-option active">
-                  <span>Simple and fast</span>
-                  <b>64%</b>
-                </div>
-                <div className="poll-option">
-                  <span>Powerful analytics</span>
-                  <b>28%</b>
-                </div>
-                <div className="poll-option">
-                  <span>Shareable decisions</span>
-                  <b>8%</b>
-                </div>
-              </div>
-              <div className="floating-card card-stats">
-                <Gauge className="size-5 text-primary" />
-                <strong>94%</strong>
-                <span>completion</span>
-              </div>
-              <div className="floating-card card-users">
-                <UsersRound className="size-5 text-secondary" />
-                <strong>2.4k</strong>
-                <span>responses</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <HeroPreview />
       </section>
 
       <section className="overview-section" id="overview">
         <div className="section-heading">
-          <p className="eyebrow">Animated Overview</p>
+          <p className="eyebrow">How it works</p>
           <h2>A smoother path from question to decision.</h2>
         </div>
         <div className="overview-timeline">
@@ -165,19 +135,46 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="reviews-section" id="reviews">
+      <section className="landing-highlights" id="features" aria-labelledby="highlights-heading">
         <div className="section-heading">
-          <p className="eyebrow">Poll Reviews</p>
+          <p className="eyebrow">Less busywork. More perspective.</p>
+          <h2 id="highlights-heading">Small details.<br />A better polling experience.</h2>
+          <p className="highlights-intro">Keep your momentum from the first draft to the next conversation.</p>
+        </div>
+        <div className="highlight-grid">
+          {highlights.map(feature => (
+            <article className={`highlight-card highlight-${feature.tone}`} key={feature.label}>
+              <div className="highlight-icon" aria-hidden="true"><feature.icon size={25} /></div>
+              <p className="highlight-label">{feature.label}</p>
+              <h3>{feature.title}</h3>
+              <p className="highlight-description">{feature.text}</p>
+              <div className="highlight-detail"><CheckCircle2 size={14} aria-hidden="true" /><span>{feature.detail}</span></div>
+            </article>
+          ))}
+        </div>
+        <article className="landing-analysis-highlight">
+          <div>
+            <p className="eyebrow">Understand the answers</p>
+            <h3>A clearer view of every response.</h3>
+            <p>Compare choices, explore participation, and see which questions get answered. Switch between charts and detailed counts, then take the results with you.</p>
+            <Link to={dashboardHref} className="landing-button outline">Explore your workspace<ArrowRight size={16} /></Link>
+          </div>
+          <ul className="analysis-feature-list">
+            <li><BarChart3 aria-hidden="true" /><div><strong>Results you can read at a glance</strong><span>Question breakdowns, vote comparisons, and answer coverage.</span></div></li>
+            <li><Download aria-hidden="true" /><div><strong>Your results, ready to export</strong><span>Download one poll or all polls as CSV, with names and IDs included.</span></div></li>
+            <li><ShieldCheck aria-hidden="true" /><div><strong>Participation on your terms</strong><span>Choose anonymous or signed-in responses and set an expiry.</span></div></li>
+          </ul>
+        </article>
+      </section>
+
+      <section className="reviews-section" id="use-cases">
+        <div className="section-heading">
+          <p className="eyebrow">Made for your questions</p>
           <h2>Teams use PollForge when the answer needs to be shared.</h2>
         </div>
         <div className="reviews-grid">
           {reviews.map((review) => (
             <article className="review-card" key={review.name}>
-              <div className="review-stars">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star className="size-4" fill="currentColor" key={index} />
-                ))}
-              </div>
               <p>{review.quote}</p>
               <div>
                 <strong>{review.name}</strong>
@@ -202,6 +199,35 @@ export function LandingPage() {
           <span><ShieldCheck className="size-4" /> Clean response modes</span>
         </div>
       </section>
+      <footer className="product-footer" aria-label="Site footer">
+        <div className="product-footer-main">
+          <div className="product-footer-brand">
+            <Link to="/" className="brand-lockup" aria-label="PollForge home">
+              <span className="brand-mark"><BarChart3 className="size-5" aria-hidden="true" /></span>
+              <span>PollForge</span>
+            </Link>
+            <p>Bring people into the conversation.<br />Turn their responses into a clearer direction.</p>
+          </div>
+          <nav className="product-footer-links" aria-label="Product">
+            <h2>Product</h2>
+            <a href="#overview">How it works</a>
+            <a href="#features">Features</a>
+            <a href="#use-cases">Use cases</a>
+            <Link to={dashboardHref}>Your workspace<ArrowRight size={14} aria-hidden="true" /></Link>
+          </nav>
+          <div className="product-footer-support">
+            <h2>A little help goes a long way.</h2>
+            <p>Have a question or an idea for PollForge? Visit the creator’s portfolio to get in touch.</p>
+            <a href="https://subransu.com" target="_blank" rel="noopener noreferrer" className="product-support-link">
+              Support<ArrowUpRight size={16} aria-hidden="true" /><span className="sr-only"> — opens Subransu’s portfolio in a new tab</span>
+            </a>
+          </div>
+        </div>
+        <div className="product-footer-bottom">
+          <span>© {new Date().getFullYear()} PollForge. All rights reserved.</span>
+          <a href="https://subransu.com" target="_blank" rel="noopener noreferrer">Built by Subransu<ArrowUpRight size={13} aria-hidden="true" /><span className="sr-only"> — opens in a new tab</span></a>
+        </div>
+      </footer>
     </main>
   )
 }

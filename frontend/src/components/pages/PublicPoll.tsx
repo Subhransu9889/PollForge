@@ -1,3 +1,4 @@
+import { THANK_YOU_TITLE } from '@/constants'
 import { useCallback, useEffect, useState } from 'react'
 import type { Poll, Analytics } from '@/types'
 import type { LoginFormData, RegisterFormData } from '@/utils/validation'
@@ -272,7 +273,7 @@ export function PublicPoll({ pollId }: PublicPollProps) {
         <DialogContent className="border-white/12 !bg-[#090a0a] !text-[#eef6ff] shadow-2xl shadow-black/40">
           <DialogHeader>
             <DialogTitle className="pr-8 text-2xl font-black text-foreground">
-              {poll.thankYouTitle}
+              {THANK_YOU_TITLE}
             </DialogTitle>
             <DialogDescription className="text-base leading-7 text-muted">
               {poll.thankYouMessage}

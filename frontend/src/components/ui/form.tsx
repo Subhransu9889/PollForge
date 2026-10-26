@@ -7,6 +7,7 @@ import {
   useFormContext,
 } from "react-hook-form"
 import type {
+  ControllerProps,
   FieldPath,
   FieldValues,
 } from "react-hook-form"
@@ -26,28 +27,16 @@ const FormFieldContext = React.createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 )
 
-const FormField = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    name: FieldPath<any>
-    control: any
-    render: any
-    disabled?: boolean
-    defaultValue?: any
-    rules?: any
-    shouldUnregister?: boolean
-  }
->(({ className, name, control, render, ...props }) => (
-  <FormFieldContext.Provider value={{ name }}>
-    <Controller
-      name={name}
-      control={control}
-      render={render}
-      {...props}
-    />
-  </FormFieldContext.Provider>
-))
-FormField.displayName = "FormField"
+function FormField<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(props: ControllerProps<TFieldValues, TName>) {
+  return (
+    <FormFieldContext.Provider value={{ name: props.name }}>
+      <Controller {...props} />
+    </FormFieldContext.Provider>
+  )
+}
 
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
